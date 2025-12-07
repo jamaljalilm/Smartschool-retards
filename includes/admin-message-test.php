@@ -4,19 +4,9 @@ if (!defined('ABSPATH')) exit;
 /**
  * includes/admin-message-test.php
  * Outil de test pour envoyer des messages Smartschool manuellement
+ *
+ * Note: Le menu est enregistré dans admin.php
  */
-
-/* ========================== MENU ADMIN ========================== */
-add_action('admin_menu', function(){
-    add_submenu_page(
-        'ssr-settings',                          // Parent slug
-        __('Test Messages','smartschool-retards'), // Page title
-        __('📤 Test Messages','smartschool-retards'), // Menu title
-        'manage_options',                        // Capability
-        'ssr-test-messages',                     // Menu slug
-        'ssr_admin_test_messages_render'        // Function
-    );
-}, 20); // Priorité 20 pour s'assurer que le menu parent existe
 
 /* ========================== PAGE TEST MESSAGES ========================== */
 function ssr_admin_test_messages_render(){

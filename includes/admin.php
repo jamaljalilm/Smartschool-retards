@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) exit;
 
 /* ========================== MENU ADMIN ========================== */
 add_action('admin_menu', function(){
+    // Menu principal
     add_menu_page(
         __('Smartschool Retards','smartschool-retards'),
         __('Smartschool Retards','smartschool-retards'),
@@ -21,6 +22,16 @@ add_action('admin_menu', function(){
         'ssr_admin_page_render',
         'dashicons-clock',
         56
+    );
+
+    // Sous-menu : Test Messages
+    add_submenu_page(
+        'ssr-settings',
+        __('Test Messages','smartschool-retards'),
+        __('📤 Test Messages','smartschool-retards'),
+        'manage_options',
+        'ssr-test-messages',
+        'ssr_admin_test_messages_render'
     );
 });
 
