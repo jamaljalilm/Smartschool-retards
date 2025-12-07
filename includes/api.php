@@ -322,15 +322,24 @@ if (!function_exists('ssr_api_send_message')) {
      *
      * Signature sendMsg Smartschool :
      *  sendMsg(accesscode, userIdentifier, title, body, senderIdentifier, attachments, coaccount, copyToLVS)
+     *
+     * @param string $userIdentifier Identifiant unique du destinataire
+     * @param string $title Titre du message
+     * @param string $body Corps du message
+     * @param string $senderIdentifier Identifiant de l'expéditeur ('Null' = pas d'expéditeur)
+     * @param mixed|null $attachments Pièces jointes en base64 (optionnel)
+     * @param int|null $coaccount Type de compte (0=principal, 1=parent1, 2=parent2)
+     * @param bool $copyToLVS Copier dans le Suivi des élèves (optionnel)
+     * @return mixed|WP_Error Résultat de l'API ou WP_Error en cas d'erreur
      */
     function ssr_api_send_message(
         $userIdentifier,
         $title,
         $body,
         $senderIdentifier = 'Null',
-        $copyToLVS = false,
         $attachments = null,
-        $coaccount = null
+        $coaccount = null,
+        $copyToLVS = false
     ) {
         // Sécurisation basique
         $userIdentifier   = trim((string)$userIdentifier);

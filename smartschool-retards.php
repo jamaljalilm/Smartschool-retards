@@ -25,6 +25,7 @@ require_once SSR_INC_DIR . 'db.php';
 require_once SSR_INC_DIR . 'api.php';
 require_once SSR_INC_DIR . 'cron.php';
 require_once SSR_INC_DIR . 'admin.php';
+require_once SSR_INC_DIR . 'admin-message-test.php';
 
 // Load shortcodes (each file registers its own shortcode tag)
 require_once SSR_SC_DIR . 'fiche_eleve.php';

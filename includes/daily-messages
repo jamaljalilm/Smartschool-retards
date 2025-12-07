@@ -202,9 +202,9 @@ L'équipe éducative";
           $title,      // titre
           $message,    // message
           $sender,     // expéditeur
-          false,       // copyToLVS
           null,        // attachments
-          null         // coaccount (compte principal = null)
+          null,        // coaccount (compte principal = null)
+          false        // copyToLVS
         );
         
         if (!is_wp_error($result)) {
@@ -217,13 +217,13 @@ L'équipe éducative";
       // 2) Envoyer aux parents (coaccount 1 et 2)
       if (function_exists('ssr_api_send_message')) {
         // Parent 1 (coaccount 1)
-        $result_p1 = ssr_api_send_message($uid, $title, $message, $sender, false, null, 1);
+        $result_p1 = ssr_api_send_message($uid, $title, $message, $sender, null, 1, false);
         if (!is_wp_error($result_p1)) {
           $sent_parent1 = true;
         }
-        
+
         // Parent 2 (coaccount 2)
-        $result_p2 = ssr_api_send_message($uid, $title, $message, $sender, false, null, 2);
+        $result_p2 = ssr_api_send_message($uid, $title, $message, $sender, null, 2, false);
         if (!is_wp_error($result_p2)) {
           $sent_parent2 = true;
         }
