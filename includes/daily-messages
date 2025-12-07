@@ -138,24 +138,19 @@ if (!function_exists('ssr_daily_send_messages_to_lates')) {
       }
     }
     
-    // Message standard
-    $message_template = "Bonjour,
+    // Récupération du message personnalisé depuis les options
+    $title = get_option('ssr_daily_message_title', 'Retard - Interdiction de sortir');
+    $title = apply_filters('ssr_daily_message_title', $title);
 
-Tu as été en retard aujourd'hui.
+    $message_template = get_option('ssr_daily_message_body',
+        "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron."
+    );
 
-Tu seras donc privé de sortie à la prochaine pause de midi.
+    $signature = get_option('ssr_daily_message_signature', 'Monsieur Khali');
+    $signature = apply_filters('ssr_daily_message_signature', $signature);
 
-Merci de te présenter à l'accueil à 13h05.
-
-Cordialement,
-L'équipe éducative";
-    
-    // Signature configurable (peut être modifiée via un filtre)
-    $signature = apply_filters('ssr_daily_message_signature', 'L\'équipe éducative');
-    $message_template = str_replace('L\'équipe éducative', $signature, $message_template);
-    
-    // Titre du message
-    $title = apply_filters('ssr_daily_message_title', 'Retard - Interdiction de sortir');
+    // Ajout de la signature au message
+    $message_template = $message_template . "\n\n" . $signature;
     
     // Expéditeur
     $sender = 'R001'; // Compte expéditeur Smartschool

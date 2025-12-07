@@ -33,6 +33,16 @@ add_action('admin_menu', function(){
         'ssr-test-messages',
         'ssr_admin_test_messages_render'
     );
+
+    // Sous-menu : Configuration Message Quotidien
+    add_submenu_page(
+        'ssr-settings',
+        __('Message Quotidien','smartschool-retards'),
+        __('✉️ Message Quotidien','smartschool-retards'),
+        'manage_options',
+        'ssr-daily-message-config',
+        'ssr_admin_daily_message_config_render'
+    );
 });
 
 /* ========================== PAGE ADMIN (réglages) ========================== */

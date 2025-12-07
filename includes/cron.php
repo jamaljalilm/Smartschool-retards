@@ -76,8 +76,6 @@ if (!function_exists('ssr_cron_run_daily')) {
 function ssr_cron_run_daily($manual=false){
     $test_mode = ssr_trueish(ssr_get_option(SSR_OPT_TESTMODE, '0'));
     $sender    = 'R001'; // Compte expéditeur Smartschool
-	    // Signature du message (modifiable facilement)
-    $signature = 'Monsieur Khali';
 
     // Log de départ
     if (function_exists('ssr_log')) {
@@ -105,17 +103,18 @@ function ssr_cron_run_daily($manual=false){
         return;
     }
 
-    // Exemple de message
-    $titleTpl = apply_filters(
-        'ssr_cron_message_title_tpl',
-        'Retard - Interdication de sortir'
-    );
+    // Récupération du message personnalisé depuis les options
+    $titleTpl = get_option('ssr_daily_message_title', 'Retard - Interdiction de sortir');
+    $titleTpl = apply_filters('ssr_cron_message_title_tpl', $titleTpl);
 
-    // %s = signature (ex: "Monsieur Khali")
-    $bodyTpl  = apply_filters(
-        'ssr_cron_message_body_tpl',
-        "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron.\n\n%s"
+    $bodyTpl = get_option('ssr_daily_message_body',
+        "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron."
     );
+    $signature = get_option('ssr_daily_message_signature', 'Monsieur Khali');
+
+    // Ajout de la signature au corps du message
+    $bodyTpl = $bodyTpl . "\n\n" . $signature;
+    $bodyTpl = apply_filters('ssr_cron_message_body_tpl', $bodyTpl);
 
 
 
@@ -129,8 +128,7 @@ function ssr_cron_run_daily($manual=false){
         if (!$uid) continue;
 
         $title = $titleTpl;
-        // On injecte seulement la signature dans le template
-        $body  = sprintf($bodyTpl, $signature);
+        $body  = $bodyTpl;
 
         if (function_exists('ssr_api_send_message')) {
 

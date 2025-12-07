@@ -131,16 +131,27 @@ function ssr_admin_test_messages_render(){
                             <label for="message_body">Corps du message *</label>
                         </th>
                         <td>
-                            <textarea name="message_body"
-                                      id="message_body"
-                                      rows="8"
-                                      class="large-text"
-                                      required
-                                      placeholder="Contenu du message..."><?php
-                                echo isset($_POST['message_body'])
-                                    ? esc_textarea($_POST['message_body'])
-                                    : "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron.\n\nMonsieur Khali";
-                            ?></textarea>
+                            <?php
+                            $default_message = "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron.\n\nMonsieur Khali";
+                            $message_content = isset($_POST['message_body']) ? wp_kses_post($_POST['message_body']) : $default_message;
+
+                            wp_editor(
+                                $message_content,
+                                'message_body',
+                                array(
+                                    'textarea_name' => 'message_body',
+                                    'textarea_rows' => 10,
+                                    'media_buttons' => false,
+                                    'teeny' => false,
+                                    'tinymce' => array(
+                                        'toolbar1' => 'formatselect,bold,italic,underline,forecolor,backcolor,bullist,numlist,alignleft,aligncenter,alignright,link,unlink,undo,redo',
+                                        'toolbar2' => '',
+                                    ),
+                                    'quicktags' => true,
+                                )
+                            );
+                            ?>
+                            <p class="description">Utilisez l'éditeur pour formater votre message (gras, couleurs, listes, etc.)</p>
                         </td>
                     </tr>
 
