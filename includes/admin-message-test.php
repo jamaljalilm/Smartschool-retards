@@ -21,10 +21,10 @@ function ssr_admin_test_messages_render(){
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ssr_test_send'])) {
         check_admin_referer('ssr_test_send_message', 'ssr_test_nonce');
 
-        $user_id     = sanitize_text_field($_POST['user_identifier'] ?? '');
-        $title       = sanitize_text_field($_POST['message_title'] ?? '');
-        $body        = wp_kses_post($_POST['message_body'] ?? '');
-        $sender      = sanitize_text_field($_POST['sender_identifier'] ?? 'Null');
+        $user_id     = isset($_POST['user_identifier']) ? sanitize_text_field($_POST['user_identifier']) : '';
+        $title       = isset($_POST['message_title']) ? sanitize_text_field($_POST['message_title']) : '';
+        $body        = isset($_POST['message_body']) ? wp_kses_post($_POST['message_body']) : '';
+        $sender      = isset($_POST['sender_identifier']) ? sanitize_text_field($_POST['sender_identifier']) : 'Null';
         $coaccount   = isset($_POST['coaccount']) ? intval($_POST['coaccount']) : null;
         $copy_to_lvs = !empty($_POST['copy_to_lvs']);
 

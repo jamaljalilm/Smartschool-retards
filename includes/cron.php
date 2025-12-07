@@ -124,7 +124,7 @@ function ssr_cron_run_daily($manual=false){
     $sent = 0;
 
     foreach ($rows as $r) {
-        $uid = $r['userIdentifier'] ?? '';
+        $uid = isset($r['userIdentifier']) ? $r['userIdentifier'] : '';
         if (!$uid) continue;
 
         $title = $titleTpl;

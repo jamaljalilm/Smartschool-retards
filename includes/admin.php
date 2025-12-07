@@ -76,9 +76,9 @@ function ssr_admin_page_render(){
         if (isset($_POST['smartschool_save'])) {
             check_admin_referer('smartschool_save', 'smartschool_nonce');
             ssr_set_option([
-                SSR_OPT_SOAP_ACCESSCODE => sanitize_text_field($_POST['accesscode'] ?? ''),
-                SSR_OPT_SOAP_URL        => esc_url_raw(trim($_POST['url'] ?? '')),
-                SSR_OPT_SOAP_HOURS      => sanitize_text_field($_POST['hours'] ?? ''),
+                SSR_OPT_SOAP_ACCESSCODE => isset($_POST['accesscode']) ? sanitize_text_field($_POST['accesscode']) : '',
+                SSR_OPT_SOAP_URL        => isset($_POST['url']) ? esc_url_raw(trim($_POST['url'])) : '',
+                SSR_OPT_SOAP_HOURS      => isset($_POST['hours']) ? sanitize_text_field($_POST['hours']) : '',
             ]);
             echo '<div class="updated"><p>Options Smartschool (SOAP) sauvegardées ✅</p></div>';
             $saved = true;

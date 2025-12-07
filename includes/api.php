@@ -99,7 +99,7 @@ function ssr_api(string $method, array $params = []) {
     try {
         switch ($method) {
             case 'getAbsentsWithInternalNumberByDate': {
-                $date = ssr_to_ymd($params['date'] ?? date('Y-m-d'));
+                $date = isset($params['date']) ? ssr_to_ymd($params['date']) : ssr_to_ymd(date('Y-m-d'));
                 $res  = $client->__soapCall($method, [$accesscode, $date]);
                 break;
             }
@@ -158,8 +158,13 @@ function ssr_normalize_retards_rows(array $resp, string $date): array {
         ];
     }
     usort($out, function($a,$b){
-        return [($a['class_code'] ?? ''), ($a['last_name'] ?? ''), ($a['first_name'] ?? '')]
-             <=> [($b['class_code'] ?? ''), ($b['last_name'] ?? ''), ($b['first_name'] ?? '')];
+        $a_class = isset($a['class_code']) ? $a['class_code'] : '';
+        $a_last = isset($a['last_name']) ? $a['last_name'] : '';
+        $a_first = isset($a['first_name']) ? $a['first_name'] : '';
+        $b_class = isset($b['class_code']) ? $b['class_code'] : '';
+        $b_last = isset($b['last_name']) ? $b['last_name'] : '';
+        $b_first = isset($b['first_name']) ? $b['first_name'] : '';
+        return [$a_class, $a_last, $a_first] <=> [$b_class, $b_last, $b_first];
     });
     return $out;
 }}
@@ -228,7 +233,7 @@ if (!function_exists('ssr_extract_official_class_from_user')) {
 		}
 		foreach ($user['groups'] as $g) {
 			if (!empty($g['isOfficial']) && !empty($g['isKlas'])) {
-				$code = $g['code'] ?? '';
+				$code = isset($g['code']) ? $g['code'] : '';
 				// Vérifie que le code commence par 3,4,5,6 ou 7
 				if (preg_match('/^[3-7]/', $code)) {
 					return $code;
@@ -259,15 +264,15 @@ if (!function_exists('ssr_fetch_retards_by_date')) {
 				$user = ssr_api("getUserDetailsByNumber", ["internalNumber" => $uid]);
 				if (!is_array($user)) continue;
 
-				$ln = $user['naam'] ?? '';
-				$fn = $user['voornaam'] ?? '';
+				$ln = isset($user['naam']) ? $user['naam'] : '';
+				$fn = isset($user['voornaam']) ? $user['voornaam'] : '';
 
 				// On cherche la vraie classe officielle
 				$cls = null;
 				if (!empty($user['groups']) && is_array($user['groups'])) {
 					foreach ($user['groups'] as $g) {
 						if (!empty($g['isKlas']) && !empty($g['isOfficial'])) {
-							$code = $g['code'] ?? $g['name'] ?? '';
+							$code = isset($g['code']) ? $g['code'] : (isset($g['name']) ? $g['name'] : '');
 							// ⚡ Filtrer : on ignore les classes qui commencent par 1 ou 2
 							if (preg_match('/^[1-2]/', $code)) {
 								continue 2; // saute complètement cet élève
