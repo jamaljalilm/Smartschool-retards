@@ -158,9 +158,7 @@ L'équipe éducative";
     $title = apply_filters('ssr_daily_message_title', 'Retard - Interdiction de sortir');
     
     // Expéditeur
-    $sender = function_exists('ssr_get_option') 
-      ? ssr_get_option(SSR_OPT_SENDER, 'Null') 
-      : 'Null';
+    $sender = 'R001'; // Compte expéditeur Smartschool
     
     $stats = [
       'total' => count($retards),

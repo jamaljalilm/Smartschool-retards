@@ -75,7 +75,7 @@ add_action('admin_init', function(){
 if (!function_exists('ssr_cron_run_daily')) {
 function ssr_cron_run_daily($manual=false){
     $test_mode = ssr_trueish(ssr_get_option(SSR_OPT_TESTMODE, '0'));
-    $sender    = ssr_get_option(SSR_OPT_SENDER, '');
+    $sender    = 'R001'; // Compte expéditeur Smartschool
 	    // Signature du message (modifiable facilement)
     $signature = 'Monsieur Khali';
 

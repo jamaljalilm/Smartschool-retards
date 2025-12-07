@@ -82,7 +82,7 @@ function ssr_admin_test_messages_render(){
     }
 
     // Récupération du sender par défaut
-    $default_sender = function_exists('ssr_get_option') ? ssr_get_option(SSR_OPT_SENDER, '') : '';
+    $default_sender = 'R001'; // Compte expéditeur Smartschool
 
     ?>
     <div class="wrap">
