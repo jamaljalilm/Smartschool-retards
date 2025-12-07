@@ -9,14 +9,14 @@ if (!defined('ABSPATH')) exit;
 /* ========================== MENU ADMIN ========================== */
 add_action('admin_menu', function(){
     add_submenu_page(
-        'ssr-settings',
-        __('Test Messages','smartschool-retards'),
-        __('Test Messages','smartschool-retards'),
-        'manage_options',
-        'ssr-test-messages',
-        'ssr_admin_test_messages_render'
+        'ssr-settings',                          // Parent slug
+        __('Test Messages','smartschool-retards'), // Page title
+        __('📤 Test Messages','smartschool-retards'), // Menu title
+        'manage_options',                        // Capability
+        'ssr-test-messages',                     // Menu slug
+        'ssr_admin_test_messages_render'        // Function
     );
-});
+}, 20); // Priorité 20 pour s'assurer que le menu parent existe
 
 /* ========================== PAGE TEST MESSAGES ========================== */
 function ssr_admin_test_messages_render(){
@@ -115,8 +115,8 @@ function ssr_admin_test_messages_render(){
                                    id="user_identifier"
                                    class="regular-text"
                                    required
-                                   placeholder="Ex: 12345 ou internalnumber"
-                                   value="<?php echo isset($_POST['user_identifier']) ? esc_attr($_POST['user_identifier']) : ''; ?>">
+                                   placeholder="Ex: INDL.9999"
+                                   value="<?php echo isset($_POST['user_identifier']) ? esc_attr($_POST['user_identifier']) : 'INDL.9999'; ?>">
                             <p class="description">Numéro interne Smartschool ou identifiant unique de l'utilisateur</p>
                         </td>
                     </tr>
@@ -131,8 +131,8 @@ function ssr_admin_test_messages_render(){
                                    id="message_title"
                                    class="regular-text"
                                    required
-                                   placeholder="Ex: Test de message"
-                                   value="<?php echo isset($_POST['message_title']) ? esc_attr($_POST['message_title']) : 'Test de message'; ?>">
+                                   placeholder="Ex: Retard - Interdiction de sortir"
+                                   value="<?php echo isset($_POST['message_title']) ? esc_attr($_POST['message_title']) : 'Retard - Interdiction de sortir'; ?>">
                         </td>
                     </tr>
 
@@ -149,7 +149,7 @@ function ssr_admin_test_messages_render(){
                                       placeholder="Contenu du message..."><?php
                                 echo isset($_POST['message_body'])
                                     ? esc_textarea($_POST['message_body'])
-                                    : "Bonjour,\n\nCeci est un message de test.\n\nCordialement";
+                                    : "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron.\n\nMonsieur Khali";
                             ?></textarea>
                         </td>
                     </tr>
