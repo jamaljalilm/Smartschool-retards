@@ -141,7 +141,7 @@ function ssr_admin_daily_message_config_render(){
                                    class="regular-text"
                                    required
                                    value="<?php echo esc_attr($current_title); ?>">
-                            <p class="description">Le titre qui apparaîtra dans la messagerie Smartschool</p>
+                            <p class="description">Le titre qui apparaîtra dans la messagerie Smartschool. Variables : <code>{prenom}</code>, <code>{nom}</code>, <code>{classe}</code></p>
                         </td>
                     </tr>
 
@@ -171,6 +171,7 @@ function ssr_admin_daily_message_config_render(){
                                 Le contenu principal du message. Utilisez l'éditeur pour le formater.
                                 <br><strong>Astuce :</strong> Vous pouvez utiliser du HTML pour un formatage avancé.
                                 <br><strong>Note :</strong> Incluez la signature directement dans le corps du message.
+                                <br><strong>Variables disponibles :</strong> <code>{prenom}</code>, <code>{nom}</code>, <code>{classe}</code> - Seront automatiquement remplacées par les informations de l'élève.
                             </p>
                         </td>
                     </tr>
@@ -233,10 +234,18 @@ function ssr_admin_daily_message_config_render(){
 
         <div class="card" style="max-width: 900px; margin-top: 20px;">
             <h2>📋 Prévisualisation du message complet</h2>
+            <p style="color: #666; font-size: 13px;">
+                Exemple de rendu avec les variables remplacées (prénom: <strong>Jean</strong>, nom: <strong>Dupont</strong>, classe: <strong>5A</strong>)
+            </p>
             <div style="background: #f5f5f7; padding: 20px; border-radius: 8px; border-left: 4px solid #2271b1;">
-                <h3 style="margin-top: 0; color: #2271b1;"><?php echo esc_html($current_title); ?></h3>
+                <?php
+                // Afficher un exemple avec variables remplacées
+                $preview_title = str_replace(['{prenom}', '{nom}', '{classe}'], ['Jean', 'Dupont', '5A'], $current_title);
+                $preview_body = str_replace(['{prenom}', '{nom}', '{classe}'], ['Jean', 'Dupont', '5A'], $current_body);
+                ?>
+                <h3 style="margin-top: 0; color: #2271b1;"><?php echo esc_html($preview_title); ?></h3>
                 <div style="line-height: 1.6;">
-                    <?php echo wpautop($current_body); ?>
+                    <?php echo wpautop($preview_body); ?>
                 </div>
             </div>
         </div>
@@ -248,6 +257,7 @@ function ssr_admin_daily_message_config_render(){
                 <li><strong>Expéditeur :</strong> Tous les messages sont envoyés depuis le compte <code>R001</code></li>
                 <li><strong>Planification :</strong> Envoi automatique à l'heure configurée ci-dessus (<?php echo esc_html($send_time); ?>)</li>
                 <li><strong>Formatage :</strong> Le HTML est supporté par Smartschool (gras, couleurs, listes, etc.)</li>
+                <li><strong>Variables personnalisées :</strong> Utilisez <code>{prenom}</code> pour le prénom, <code>{nom}</code> pour le nom, <code>{classe}</code> pour la classe de l'élève. Exemple : "Bonjour <code>{prenom}</code>" deviendra "Bonjour Jean"</li>
                 <li><strong>Destinataires actuels :</strong>
                     <?php
                     $recipients = array();

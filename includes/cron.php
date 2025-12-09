@@ -127,8 +127,21 @@ function ssr_cron_run_daily($manual=false){
         $uid = isset($r['userIdentifier']) ? $r['userIdentifier'] : '';
         if (!$uid) continue;
 
+        // Récupération des informations de l'élève
+        $prenom = isset($r['firstName']) ? $r['firstName'] : '';
+        $nom = isset($r['lastName']) ? $r['lastName'] : '';
+        $classe = isset($r['classCode']) ? $r['classCode'] : '';
+
+        // Remplacement des variables dans le titre et le corps
         $title = $titleTpl;
-        $body  = $bodyTpl;
+        $title = str_replace('{prenom}', $prenom, $title);
+        $title = str_replace('{nom}', $nom, $title);
+        $title = str_replace('{classe}', $classe, $title);
+
+        $body = $bodyTpl;
+        $body = str_replace('{prenom}', $prenom, $body);
+        $body = str_replace('{nom}', $nom, $body);
+        $body = str_replace('{classe}', $classe, $body);
 
         if (function_exists('ssr_api_send_message')) {
 
