@@ -54,7 +54,6 @@ function ssr_admin_daily_message_config_render(){
     $send_time = get_option('ssr_daily_hhmm', '13:15');
 
     ?>
-    <div class="wrap">
     <style>
         /* Style personnalisé pour les checkboxes */
         .ssr-checkbox-wrapper {
@@ -111,6 +110,7 @@ function ssr_admin_daily_message_config_render(){
             color: #2271b1;
         }
     </style>
+    <div class="wrap">
         <h1><?php _e('Configuration du message quotidien', 'smartschool-retards'); ?></h1>
 
         <?php if ($saved): ?>
