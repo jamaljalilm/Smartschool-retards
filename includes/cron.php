@@ -147,7 +147,7 @@ function ssr_cron_run_daily($manual=false){
 
             // 1) Élève : compte principal (coaccount = null)
             if ($send_to_student === '1') {
-                $res = ssr_api_send_message($uid, $title, $body, $sender, null, null, false);
+                $res = ssr_api_send_message($uid, $title, $body, $sender, null, null, true);
                 if (is_wp_error($res)) {
                     if (function_exists('ssr_log')) ssr_log('Send FAIL (élève) uid='.$uid.' error='.$res->get_error_message(), 'error', 'cron');
                 } else {
@@ -165,7 +165,7 @@ function ssr_cron_run_daily($manual=false){
                         break 2; // sort du foreach principal
                     }
 
-                    $res_parent = ssr_api_send_message($uid, $title, $body, $sender, null, $co, false);
+                    $res_parent = ssr_api_send_message($uid, $title, $body, $sender, null, $co, true);
                     if (is_wp_error($res_parent)) {
                         if (function_exists('ssr_log')) ssr_log('Send FAIL (parent coaccount='.$co.') uid='.$uid.' error='.$res_parent->get_error_message(), 'error', 'cron');
                     } else {

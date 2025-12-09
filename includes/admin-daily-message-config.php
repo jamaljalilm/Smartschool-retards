@@ -256,6 +256,7 @@ function ssr_admin_daily_message_config_render(){
                 <li><strong>Destinataires :</strong> Vous pouvez choisir d'envoyer aux élèves et/ou aux parents selon vos préférences</li>
                 <li><strong>Expéditeur :</strong> Tous les messages sont envoyés depuis le compte <code>R001</code></li>
                 <li><strong>Planification :</strong> Envoi automatique à l'heure configurée ci-dessus (<?php echo esc_html($send_time); ?>)</li>
+                <li><strong>Enregistrement LVS :</strong> Tous les messages sont automatiquement enregistrés dans le suivi des élèves (LVS) de Smartschool</li>
                 <li><strong>Formatage :</strong> Le HTML est supporté par Smartschool (gras, couleurs, listes, etc.)</li>
                 <li><strong>Variables personnalisées :</strong> Utilisez <code>{prenom}</code> pour le prénom, <code>{nom}</code> pour le nom, <code>{classe}</code> pour la classe de l'élève. Exemple : "Bonjour <code>{prenom}</code>" deviendra "Bonjour Jean"</li>
                 <li><strong>Destinataires actuels :</strong>
