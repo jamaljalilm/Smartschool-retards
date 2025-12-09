@@ -54,15 +54,16 @@ function ssr_admin_daily_message_config_render(){
     $send_time = get_option('ssr_daily_hhmm', '13:15');
 
     ?>
+    <div class="wrap">
     <style>
         /* Style personnalisé pour les checkboxes */
         .ssr-checkbox-wrapper {
             margin-bottom: 12px;
         }
         .ssr-checkbox-wrapper input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            margin-right: 8px;
+            width: 22px;
+            height: 22px;
+            margin: 0 8px 0 0;
             cursor: pointer;
             vertical-align: middle;
             position: relative;
@@ -72,6 +73,8 @@ function ssr_admin_daily_message_config_render(){
             border-radius: 4px;
             background-color: #fff;
             transition: all 0.2s ease;
+            display: inline-block;
+            flex-shrink: 0;
         }
         .ssr-checkbox-wrapper input[type="checkbox"]:hover {
             border-color: #2271b1;
@@ -80,27 +83,34 @@ function ssr_admin_daily_message_config_render(){
             background-color: #2271b1;
             border-color: #2271b1;
         }
-        .ssr-checkbox-wrapper input[type="checkbox"]:checked::before {
+        .ssr-checkbox-wrapper input[type="checkbox"]:checked::after {
             content: "✓";
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: #fff;
             font-size: 16px;
             font-weight: bold;
             line-height: 1;
         }
+        .ssr-checkbox-wrapper {
+            display: flex;
+            align-items: center;
+        }
         .ssr-checkbox-wrapper label {
             cursor: pointer;
-            vertical-align: middle;
+            margin: 0;
             user-select: none;
         }
         .ssr-checkbox-wrapper label:hover {
             color: #2271b1;
         }
     </style>
-    <div class="wrap">
         <h1><?php _e('Configuration du message quotidien', 'smartschool-retards'); ?></h1>
 
         <?php if ($saved): ?>
