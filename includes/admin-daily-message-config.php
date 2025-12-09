@@ -124,16 +124,30 @@ function ssr_admin_daily_message_config_render(){
                             Destinataires du message *
                         </th>
                         <td>
-                            <fieldset>
+                            <fieldset style="border: none; padding: 0; margin: 0;">
                                 <legend class="screen-reader-text"><span>Destinataires</span></legend>
-                                <label for="send_to_student" style="display: block; margin-bottom: 10px;">
-                                    <input type="checkbox" name="send_to_student" id="send_to_student" value="1" <?php checked('1', $send_to_student); ?>>
-                                    <strong>Élève</strong> (compte principal)
-                                </label>
-                                <label for="send_to_parents" style="display: block;">
-                                    <input type="checkbox" name="send_to_parents" id="send_to_parents" value="1" <?php checked('1', $send_to_parents); ?>>
-                                    <strong>Parents</strong> (coaccount 1 et 2)
-                                </label>
+                                <p style="margin-bottom: 10px;">
+                                    <input type="checkbox"
+                                           name="send_to_student"
+                                           id="send_to_student"
+                                           value="1"
+                                           <?php checked('1', $send_to_student); ?>
+                                           style="margin-right: 5px;">
+                                    <label for="send_to_student">
+                                        <strong>Élève</strong> (compte principal)
+                                    </label>
+                                </p>
+                                <p style="margin-bottom: 0;">
+                                    <input type="checkbox"
+                                           name="send_to_parents"
+                                           id="send_to_parents"
+                                           value="1"
+                                           <?php checked('1', $send_to_parents); ?>
+                                           style="margin-right: 5px;">
+                                    <label for="send_to_parents">
+                                        <strong>Parents</strong> (coaccount 1 et 2)
+                                    </label>
+                                </p>
                             </fieldset>
                             <p class="description">Cochez au moins un destinataire. Vous pouvez sélectionner les deux options.</p>
                         </td>
