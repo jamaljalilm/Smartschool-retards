@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) exit;
 
 /* ========================== MENU ADMIN ========================== */
 add_action('admin_menu', function(){
+    // Menu principal
     add_menu_page(
         __('Smartschool Retards','smartschool-retards'),
         __('Smartschool Retards','smartschool-retards'),
@@ -21,6 +22,26 @@ add_action('admin_menu', function(){
         'ssr_admin_page_render',
         'dashicons-clock',
         56
+    );
+
+    // Sous-menu : Test Messages
+    add_submenu_page(
+        'ssr-settings',
+        __('Test Messages','smartschool-retards'),
+        __('📤 Test Messages','smartschool-retards'),
+        'manage_options',
+        'ssr-test-messages',
+        'ssr_admin_test_messages_render'
+    );
+
+    // Sous-menu : Configuration Message Quotidien
+    add_submenu_page(
+        'ssr-settings',
+        __('Message Quotidien','smartschool-retards'),
+        __('✉️ Message Quotidien','smartschool-retards'),
+        'manage_options',
+        'ssr-daily-message-config',
+        'ssr_admin_daily_message_config_render'
     );
 });
 
@@ -55,9 +76,9 @@ function ssr_admin_page_render(){
         if (isset($_POST['smartschool_save'])) {
             check_admin_referer('smartschool_save', 'smartschool_nonce');
             ssr_set_option([
-                SSR_OPT_SOAP_ACCESSCODE => sanitize_text_field($_POST['accesscode'] ?? ''),
-                SSR_OPT_SOAP_URL        => esc_url_raw(trim($_POST['url'] ?? '')),
-                SSR_OPT_SOAP_HOURS      => sanitize_text_field($_POST['hours'] ?? ''),
+                SSR_OPT_SOAP_ACCESSCODE => isset($_POST['accesscode']) ? sanitize_text_field($_POST['accesscode']) : '',
+                SSR_OPT_SOAP_URL        => isset($_POST['url']) ? esc_url_raw(trim($_POST['url'])) : '',
+                SSR_OPT_SOAP_HOURS      => isset($_POST['hours']) ? sanitize_text_field($_POST['hours']) : '',
             ]);
             echo '<div class="updated"><p>Options Smartschool (SOAP) sauvegardées ✅</p></div>';
             $saved = true;

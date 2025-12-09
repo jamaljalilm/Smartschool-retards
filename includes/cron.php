@@ -75,9 +75,7 @@ add_action('admin_init', function(){
 if (!function_exists('ssr_cron_run_daily')) {
 function ssr_cron_run_daily($manual=false){
     $test_mode = ssr_trueish(ssr_get_option(SSR_OPT_TESTMODE, '0'));
-    $sender    = ssr_get_option(SSR_OPT_SENDER, '');
-	    // Signature du message (modifiable facilement)
-    $signature = 'Monsieur Khali';
+    $sender    = 'R001'; // Compte expéditeur Smartschool
 
     // Log de départ
     if (function_exists('ssr_log')) {
@@ -105,58 +103,62 @@ function ssr_cron_run_daily($manual=false){
         return;
     }
 
-    // Exemple de message
-    $titleTpl = apply_filters(
-        'ssr_cron_message_title_tpl',
-        'Retard - Interdication de sortir'
+    // Récupération du message personnalisé depuis les options
+    $titleTpl = get_option('ssr_daily_message_title', 'Retard - Interdiction de sortir');
+    $titleTpl = apply_filters('ssr_cron_message_title_tpl', $titleTpl);
+
+    $bodyTpl = get_option('ssr_daily_message_body',
+        "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron.\n\nMonsieur Khali"
     );
-
-    // %s = signature (ex: "Monsieur Khali")
-    $bodyTpl  = apply_filters(
-        'ssr_cron_message_body_tpl',
-        "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron.\n\n%s"
-    );
+    $bodyTpl = apply_filters('ssr_cron_message_body_tpl', $bodyTpl);
 
 
 
+
+    // Récupération des paramètres de destinataires
+    $send_to_student = get_option('ssr_daily_send_to_student', '1');
+    $send_to_parents = get_option('ssr_daily_send_to_parents', '1');
 
     // Envoi (sécurité : limiter à X envois / run pour éviter une rafale)
     $maxSends = 200; // ajuste si besoin
     $sent = 0;
 
     foreach ($rows as $r) {
-        $uid = $r['userIdentifier'] ?? '';
+        $uid = isset($r['userIdentifier']) ? $r['userIdentifier'] : '';
         if (!$uid) continue;
 
         $title = $titleTpl;
-        // On injecte seulement la signature dans le template
-        $body  = sprintf($bodyTpl, $signature);
+        $body  = $bodyTpl;
 
         if (function_exists('ssr_api_send_message')) {
 
             // 1) Élève : compte principal (coaccount = null)
-            $res = ssr_api_send_message($uid, $title, $body, $sender, false, null, null);
-            if (is_wp_error($res)) {
-                if (function_exists('ssr_log')) ssr_log('Send FAIL (élève) uid='.$uid.' error='.$res->get_error_message(), 'error', 'cron');
-            } else {
-                if (function_exists('ssr_log')) ssr_log('Send OK (élève) uid='.$uid, 'info', 'cron');
-                $sent++;
+            if ($send_to_student === '1') {
+                $res = ssr_api_send_message($uid, $title, $body, $sender, null, null, false);
+                if (is_wp_error($res)) {
+                    if (function_exists('ssr_log')) ssr_log('Send FAIL (élève) uid='.$uid.' error='.$res->get_error_message(), 'error', 'cron');
+                } else {
+                    if (function_exists('ssr_log')) ssr_log('Send OK (élève) uid='.$uid, 'info', 'cron');
+                    $sent++;
+                }
             }
 
             // 2) Parents : coaccount 1 et 2
-            for ($co = 1; $co <= 2; $co++) {
-                // On respecte aussi la limite max d’envois
-                if ($sent >= $maxSends) {
-                    if (function_exists('ssr_log')) ssr_log('Stop: reached max sends ('.$maxSends.')', 'warning', 'cron');
-                    break 2; // sort du foreach principal
-                }
+            if ($send_to_parents === '1') {
+                for ($co = 1; $co <= 2; $co++) {
+                    // On respecte aussi la limite max d'envois
+                    if ($sent >= $maxSends) {
+                        if (function_exists('ssr_log')) ssr_log('Stop: reached max sends ('.$maxSends.')', 'warning', 'cron');
+                        break 2; // sort du foreach principal
+                    }
 
-                $res_parent = ssr_api_send_message($uid, $title, $body, $sender, false, null, $co);
-                if (is_wp_error($res_parent)) {
-                    if (function_exists('ssr_log')) ssr_log('Send FAIL (parent coaccount='.$co.') uid='.$uid.' error='.$res_parent->get_error_message(), 'error', 'cron');
-                } else {
-                    if (function_exists('ssr_log')) ssr_log('Send OK (parent coaccount='.$co.') uid='.$uid, 'info', 'cron');
-                    $sent++;
+                    $res_parent = ssr_api_send_message($uid, $title, $body, $sender, null, $co, false);
+                    if (is_wp_error($res_parent)) {
+                        if (function_exists('ssr_log')) ssr_log('Send FAIL (parent coaccount='.$co.') uid='.$uid.' error='.$res_parent->get_error_message(), 'error', 'cron');
+                    } else {
+                        if (function_exists('ssr_log')) ssr_log('Send OK (parent coaccount='.$co.') uid='.$uid, 'info', 'cron');
+                        $sent++;
+                    }
                 }
             }
         }
