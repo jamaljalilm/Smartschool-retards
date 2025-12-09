@@ -54,6 +54,52 @@ function ssr_admin_daily_message_config_render(){
     $send_time = get_option('ssr_daily_hhmm', '13:15');
 
     ?>
+    <style>
+        /* Style personnalisé pour les checkboxes */
+        .ssr-checkbox-wrapper {
+            margin-bottom: 12px;
+        }
+        .ssr-checkbox-wrapper input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            cursor: pointer;
+            vertical-align: middle;
+            position: relative;
+            appearance: none;
+            -webkit-appearance: none;
+            border: 2px solid #8c8f94;
+            border-radius: 4px;
+            background-color: #fff;
+            transition: all 0.2s ease;
+        }
+        .ssr-checkbox-wrapper input[type="checkbox"]:hover {
+            border-color: #2271b1;
+        }
+        .ssr-checkbox-wrapper input[type="checkbox"]:checked {
+            background-color: #2271b1;
+            border-color: #2271b1;
+        }
+        .ssr-checkbox-wrapper input[type="checkbox"]:checked::before {
+            content: "✓";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            line-height: 1;
+        }
+        .ssr-checkbox-wrapper label {
+            cursor: pointer;
+            vertical-align: middle;
+            user-select: none;
+        }
+        .ssr-checkbox-wrapper label:hover {
+            color: #2271b1;
+        }
+    </style>
     <div class="wrap">
         <h1><?php _e('Configuration du message quotidien', 'smartschool-retards'); ?></h1>
 
@@ -126,28 +172,26 @@ function ssr_admin_daily_message_config_render(){
                         <td>
                             <fieldset style="border: none; padding: 0; margin: 0;">
                                 <legend class="screen-reader-text"><span>Destinataires</span></legend>
-                                <p style="margin-bottom: 10px;">
+                                <div class="ssr-checkbox-wrapper">
                                     <input type="checkbox"
                                            name="send_to_student"
                                            id="send_to_student"
                                            value="1"
-                                           <?php checked('1', $send_to_student); ?>
-                                           style="margin-right: 5px;">
+                                           <?php checked('1', $send_to_student); ?>>
                                     <label for="send_to_student">
                                         <strong>Élève</strong> (compte principal)
                                     </label>
-                                </p>
-                                <p style="margin-bottom: 0;">
+                                </div>
+                                <div class="ssr-checkbox-wrapper">
                                     <input type="checkbox"
                                            name="send_to_parents"
                                            id="send_to_parents"
                                            value="1"
-                                           <?php checked('1', $send_to_parents); ?>
-                                           style="margin-right: 5px;">
+                                           <?php checked('1', $send_to_parents); ?>>
                                     <label for="send_to_parents">
                                         <strong>Parents</strong> (coaccount 1 et 2)
                                     </label>
-                                </p>
+                                </div>
                             </fieldset>
                             <p class="description">Cochez au moins un destinataire. Vous pouvez sélectionner les deux options.</p>
                         </td>
