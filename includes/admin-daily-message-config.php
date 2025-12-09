@@ -20,8 +20,8 @@ function ssr_admin_daily_message_config_render(){
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ssr_daily_msg_save'])) {
         check_admin_referer('ssr_daily_msg_save', 'ssr_daily_msg_nonce');
 
-        $title = isset($_POST['daily_message_title']) ? sanitize_text_field($_POST['daily_message_title']) : '';
-        $body = isset($_POST['daily_message_body']) ? wp_kses_post($_POST['daily_message_body']) : '';
+        $title = isset($_POST['daily_message_title']) ? sanitize_text_field(wp_unslash($_POST['daily_message_title'])) : '';
+        $body = isset($_POST['daily_message_body']) ? wp_kses_post(wp_unslash($_POST['daily_message_body'])) : '';
 
         update_option('ssr_daily_message_title', $title);
         update_option('ssr_daily_message_body', $body);
