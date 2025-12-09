@@ -23,8 +23,23 @@ function ssr_admin_daily_message_config_render(){
         $title = isset($_POST['daily_message_title']) ? sanitize_text_field(stripslashes($_POST['daily_message_title'])) : '';
         $body = isset($_POST['daily_message_body']) ? wp_kses_post(stripslashes($_POST['daily_message_body'])) : '';
 
+        // Destinataires
+        $send_to_student = !empty($_POST['send_to_student']) ? '1' : '0';
+        $send_to_parents = !empty($_POST['send_to_parents']) ? '1' : '0';
+
+        // Heure d'envoi automatique
+        $send_time = isset($_POST['daily_send_time']) ? sanitize_text_field($_POST['daily_send_time']) : '13:15';
+
         update_option('ssr_daily_message_title', $title);
         update_option('ssr_daily_message_body', $body);
+        update_option('ssr_daily_send_to_student', $send_to_student);
+        update_option('ssr_daily_send_to_parents', $send_to_parents);
+        update_option('ssr_daily_hhmm', $send_time);
+
+        // Replanifier le cron si l'heure a changé
+        if (function_exists('ssr_cron_maybe_reschedule_daily')) {
+            ssr_cron_maybe_reschedule_daily();
+        }
 
         $saved = true;
     }
@@ -34,6 +49,9 @@ function ssr_admin_daily_message_config_render(){
     $current_body = get_option('ssr_daily_message_body',
         "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron.\n\nMonsieur Khali"
     );
+    $send_to_student = get_option('ssr_daily_send_to_student', '1');
+    $send_to_parents = get_option('ssr_daily_send_to_parents', '1');
+    $send_time = get_option('ssr_daily_hhmm', '13:15');
 
     ?>
     <div class="wrap">
@@ -100,6 +118,40 @@ function ssr_admin_daily_message_config_render(){
                             </p>
                         </td>
                     </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label>Destinataires du message *</label>
+                        </th>
+                        <td>
+                            <fieldset>
+                                <label style="display: block; margin-bottom: 10px;">
+                                    <input type="checkbox" name="send_to_student" value="1" <?php checked('1', $send_to_student); ?>>
+                                    <strong>Élève</strong> (compte principal)
+                                </label>
+                                <label style="display: block;">
+                                    <input type="checkbox" name="send_to_parents" value="1" <?php checked('1', $send_to_parents); ?>>
+                                    <strong>Parents</strong> (coaccount 1 et 2)
+                                </label>
+                            </fieldset>
+                            <p class="description">Cochez au moins un destinataire. Vous pouvez sélectionner les deux options.</p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label for="daily_send_time">Heure d'envoi automatique *</label>
+                        </th>
+                        <td>
+                            <input type="time"
+                                   name="daily_send_time"
+                                   id="daily_send_time"
+                                   required
+                                   value="<?php echo esc_attr($send_time); ?>"
+                                   style="width: 150px;">
+                            <p class="description">Heure à laquelle les messages seront envoyés automatiquement chaque jour (format 24h)</p>
+                        </td>
+                    </tr>
                 </table>
 
                 <p class="submit">
@@ -123,10 +175,18 @@ function ssr_admin_daily_message_config_render(){
         <div class="card" style="max-width: 900px; margin-top: 20px; background: #fff3cd; border-left: 4px solid #ffc107;">
             <h2>ℹ️ Informations importantes</h2>
             <ul style="line-height: 1.8;">
-                <li><strong>Destinataires :</strong> Le message sera envoyé à l'élève (compte principal) + parents (coaccount 1 et 2)</li>
+                <li><strong>Destinataires :</strong> Vous pouvez choisir d'envoyer aux élèves et/ou aux parents selon vos préférences</li>
                 <li><strong>Expéditeur :</strong> Tous les messages sont envoyés depuis le compte <code>R001</code></li>
-                <li><strong>Planification :</strong> Envoi automatique selon l'heure configurée dans les réglages généraux</li>
+                <li><strong>Planification :</strong> Envoi automatique à l'heure configurée ci-dessus (<?php echo esc_html($send_time); ?>)</li>
                 <li><strong>Formatage :</strong> Le HTML est supporté par Smartschool (gras, couleurs, listes, etc.)</li>
+                <li><strong>Destinataires actuels :</strong>
+                    <?php
+                    $recipients = array();
+                    if ($send_to_student === '1') $recipients[] = 'Élèves';
+                    if ($send_to_parents === '1') $recipients[] = 'Parents';
+                    echo !empty($recipients) ? implode(' + ', $recipients) : '<span style="color: #d63638;">Aucun destinataire sélectionné !</span>';
+                    ?>
+                </li>
             </ul>
         </div>
     </div>

@@ -148,7 +148,11 @@ if (!function_exists('ssr_daily_send_messages_to_lates')) {
     
     // Expéditeur
     $sender = 'R001'; // Compte expéditeur Smartschool
-    
+
+    // Récupération des paramètres de destinataires
+    $send_to_student = get_option('ssr_daily_send_to_student', '1');
+    $send_to_parents = get_option('ssr_daily_send_to_parents', '1');
+
     $stats = [
       'total' => count($retards),
       'sent' => 0,
@@ -156,7 +160,7 @@ if (!function_exists('ssr_daily_send_messages_to_lates')) {
       'partial' => 0,
       'errors' => [],
     ];
-    
+
     // Envoyer à chaque élève
     foreach ($retards as $retard) {
       $uid = $retard['userIdentifier'] ?? '';
@@ -181,9 +185,14 @@ if (!function_exists('ssr_daily_send_messages_to_lates')) {
       $sent_parent1 = false;
       $sent_parent2 = false;
       $error = null;
-      
+
+      // Compter les destinataires attendus
+      $expected_recipients = 0;
+      $successful_recipients = 0;
+
       // 1) Envoyer à l'élève (compte principal)
-      if (function_exists('ssr_api_send_message')) {
+      if ($send_to_student === '1' && function_exists('ssr_api_send_message')) {
+        $expected_recipients++;
         $result = ssr_api_send_message(
           $uid,        // userIdentifier
           $title,      // titre
@@ -193,35 +202,40 @@ if (!function_exists('ssr_daily_send_messages_to_lates')) {
           null,        // coaccount (compte principal = null)
           false        // copyToLVS
         );
-        
+
         if (!is_wp_error($result)) {
           $sent_student = true;
+          $successful_recipients++;
         } else {
           $error = $result->get_error_message();
         }
       }
-      
+
       // 2) Envoyer aux parents (coaccount 1 et 2)
-      if (function_exists('ssr_api_send_message')) {
+      if ($send_to_parents === '1' && function_exists('ssr_api_send_message')) {
         // Parent 1 (coaccount 1)
+        $expected_recipients++;
         $result_p1 = ssr_api_send_message($uid, $title, $message, $sender, null, 1, false);
         if (!is_wp_error($result_p1)) {
           $sent_parent1 = true;
+          $successful_recipients++;
         }
 
         // Parent 2 (coaccount 2)
+        $expected_recipients++;
         $result_p2 = ssr_api_send_message($uid, $title, $message, $sender, null, 2, false);
         if (!is_wp_error($result_p2)) {
           $sent_parent2 = true;
+          $successful_recipients++;
         }
       }
-      
-      // Déterminer le statut
+
+      // Déterminer le statut en fonction des destinataires configurés
       $status = 'failed';
-      if ($sent_student && $sent_parent1 && $sent_parent2) {
+      if ($expected_recipients > 0 && $successful_recipients === $expected_recipients) {
         $status = 'success';
         $stats['sent']++;
-      } elseif ($sent_student || $sent_parent1 || $sent_parent2) {
+      } elseif ($successful_recipients > 0) {
         $status = 'partial';
         $stats['partial']++;
       } else {
