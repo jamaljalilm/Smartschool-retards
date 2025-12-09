@@ -22,11 +22,9 @@ function ssr_admin_daily_message_config_render(){
 
         $title = isset($_POST['daily_message_title']) ? sanitize_text_field($_POST['daily_message_title']) : '';
         $body = isset($_POST['daily_message_body']) ? wp_kses_post($_POST['daily_message_body']) : '';
-        $signature = isset($_POST['daily_message_signature']) ? sanitize_text_field($_POST['daily_message_signature']) : '';
 
         update_option('ssr_daily_message_title', $title);
         update_option('ssr_daily_message_body', $body);
-        update_option('ssr_daily_message_signature', $signature);
 
         $saved = true;
     }
@@ -34,9 +32,8 @@ function ssr_admin_daily_message_config_render(){
     // Récupération des valeurs actuelles
     $current_title = get_option('ssr_daily_message_title', 'Retard - Interdiction de sortir');
     $current_body = get_option('ssr_daily_message_body',
-        "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron."
+        "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron.\n\nMonsieur Khali"
     );
-    $current_signature = get_option('ssr_daily_message_signature', 'Monsieur Khali');
 
     ?>
     <div class="wrap">
@@ -99,22 +96,8 @@ function ssr_admin_daily_message_config_render(){
                             <p class="description">
                                 Le contenu principal du message. Utilisez l'éditeur pour le formater.
                                 <br><strong>Astuce :</strong> Vous pouvez utiliser du HTML pour un formatage avancé.
+                                <br><strong>Note :</strong> Incluez la signature directement dans le corps du message.
                             </p>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <th scope="row">
-                            <label for="daily_message_signature">Signature *</label>
-                        </th>
-                        <td>
-                            <input type="text"
-                                   name="daily_message_signature"
-                                   id="daily_message_signature"
-                                   class="regular-text"
-                                   required
-                                   value="<?php echo esc_attr($current_signature); ?>">
-                            <p class="description">Signature qui apparaîtra à la fin du message</p>
                         </td>
                     </tr>
                 </table>
@@ -134,9 +117,6 @@ function ssr_admin_daily_message_config_render(){
                 <div style="line-height: 1.6;">
                     <?php echo wpautop($current_body); ?>
                 </div>
-                <p style="margin-bottom: 0; margin-top: 20px; font-style: italic;">
-                    <?php echo esc_html($current_signature); ?>
-                </p>
             </div>
         </div>
 

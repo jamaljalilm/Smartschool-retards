@@ -143,14 +143,8 @@ if (!function_exists('ssr_daily_send_messages_to_lates')) {
     $title = apply_filters('ssr_daily_message_title', $title);
 
     $message_template = get_option('ssr_daily_message_body',
-        "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron."
+        "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron.\n\nMonsieur Khali"
     );
-
-    $signature = get_option('ssr_daily_message_signature', 'Monsieur Khali');
-    $signature = apply_filters('ssr_daily_message_signature', $signature);
-
-    // Ajout de la signature au message
-    $message_template = $message_template . "\n\n" . $signature;
     
     // Expéditeur
     $sender = 'R001'; // Compte expéditeur Smartschool

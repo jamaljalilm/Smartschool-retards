@@ -108,12 +108,8 @@ function ssr_cron_run_daily($manual=false){
     $titleTpl = apply_filters('ssr_cron_message_title_tpl', $titleTpl);
 
     $bodyTpl = get_option('ssr_daily_message_body',
-        "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron."
+        "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron.\n\nMonsieur Khali"
     );
-    $signature = get_option('ssr_daily_message_signature', 'Monsieur Khali');
-
-    // Ajout de la signature au corps du message
-    $bodyTpl = $bodyTpl . "\n\n" . $signature;
     $bodyTpl = apply_filters('ssr_cron_message_body_tpl', $bodyTpl);
 
 
