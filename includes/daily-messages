@@ -252,6 +252,7 @@ if (!function_exists('ssr_daily_send_messages_to_lates')) {
           'last_name' => $ln,
           'first_name' => $fn,
           'date_retard' => $today,
+          'message_title' => $title,
           'message_content' => $message,
           'sent_to_student' => $sent_student ? 1 : 0,
           'sent_to_parent1' => $sent_parent1 ? 1 : 0,
@@ -260,7 +261,7 @@ if (!function_exists('ssr_daily_send_messages_to_lates')) {
           'status' => $status,
           'error_message' => $error,
         ],
-        ['%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
+        ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
       );
     }
     
