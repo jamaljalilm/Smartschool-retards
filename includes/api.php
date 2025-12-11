@@ -39,15 +39,15 @@ function ssr_api(string $method, array $params = []) {
     $old_default_socket_timeout = @ini_get('default_socket_timeout');
     @ini_set('default_socket_timeout', (string)$readTimeout);
 
-    // Contexte SSL (on reste strict, mais neutre si defaults)
+    // Contexte SSL - désactivé pour OVH qui bloque les connexions HTTPS sortantes
     $ctx = stream_context_create([
         'http' => [
             'timeout' => $readTimeout,
         ],
         'ssl' => [
-            // laisser les valeurs par défaut (verification true)
-            // 'verify_peer' => true,
-            // 'verify_peer_name' => true,
+            'verify_peer' => false,       // Désactivé pour OVH
+            'verify_peer_name' => false,  // Désactivé pour OVH
+            'allow_self_signed' => true,
         ],
     ]);
 
