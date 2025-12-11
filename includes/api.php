@@ -51,33 +51,11 @@ function ssr_api(string $method, array $params = []) {
         ],
     ]);
 
-    // Utiliser le WSDL local pour éviter les problèmes de connectivité OVH
+    // OVH bloque le WSDL - utiliser directement le mode RPC/encoded
     $client = null;
-    $wsdlLocalPath = dirname(__FILE__) . '/smartschool_v3.wsdl';
 
-    try {
-        // Charger le WSDL local
-        $client = new SoapClient($wsdlLocalPath, [
-            'trace'              => 0,
-            'exceptions'         => true,
-            'cache_wsdl'         => WSDL_CACHE_NONE,
-            'features'           => SOAP_SINGLE_ELEMENT_ARRAYS,
-            'connection_timeout' => $connTimeout,
-            'stream_context'     => $ctx,
-            'location'           => $baseUrl . '/Webservices/V3',  // Override endpoint
-        ]);
-
-        // Log si WSDL local fonctionne
-        if (function_exists('ssr_log') && $method === 'getAbsentsWithInternalNumberByDate') {
-            ssr_log("SOAP: Using local WSDL file for $method", 'info', 'api');
-        }
-    } catch (\Throwable $e) {
-        $client = null;
-
-        // Log l'erreur WSDL
-        if (function_exists('ssr_log') && $method === 'getAbsentsWithInternalNumberByDate') {
-            ssr_log("SOAP: Local WSDL failed (" . $e->getMessage() . "), using fallback RPC/encoded", 'warning', 'api');
-        }
+    if (function_exists('ssr_log') && $method === 'getAbsentsWithInternalNumberByDate') {
+        ssr_log("SOAP: Skipping WSDL (OVH compatibility), using RPC/encoded", 'info', 'api');
     }
 
     // Fallback sans WSDL (RPC/encoded) si besoin
