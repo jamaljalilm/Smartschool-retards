@@ -252,7 +252,15 @@ if (!function_exists('ssr_fetch_retards_by_date')) {
 		$list = [];
 		$abs = ssr_api("getAbsentsWithInternalNumberByDate", ["date" => $date]);
 
-		if (!is_array($abs)) return $list;
+		if (!is_array($abs)) {
+			if (function_exists('ssr_log')) ssr_log("fetch_retards($date): API returned non-array", 'warning', 'api');
+			return $list;
+		}
+
+		$total_retards = 0;
+		$skipped_no_user = 0;
+		$skipped_year_1_2 = 0;
+		$skipped_no_class = 0;
 
 		foreach ($abs as $uid => $slots) {
 			// Vérifie retard matin ou aprem
@@ -260,9 +268,15 @@ if (!function_exists('ssr_fetch_retards_by_date')) {
 					 || (isset($slots['pm']) && $slots['pm'] === 'R');
 
 			if ($isRetard) {
+				$total_retards++;
+
 				// ⚡ Récup infos élève
 				$user = ssr_api("getUserDetailsByNumber", ["internalNumber" => $uid]);
-				if (!is_array($user)) continue;
+				if (!is_array($user)) {
+					$skipped_no_user++;
+					if (function_exists('ssr_log')) ssr_log("fetch_retards($date): UID $uid - getUserDetailsByNumber failed", 'warning', 'api');
+					continue;
+				}
 
 				// Récupérer le vrai userIdentifier (accountCode au format INDL.XXXX)
 				$userIdent = isset($user['userIdentifier']) ? $user['userIdentifier'] :
@@ -279,6 +293,8 @@ if (!function_exists('ssr_fetch_retards_by_date')) {
 							$code = isset($g['code']) ? $g['code'] : (isset($g['name']) ? $g['name'] : '');
 							// ⚡ Filtrer : on ignore les classes qui commencent par 1 ou 2
 							if (preg_match('/^[1-2]/', $code)) {
+								$skipped_year_1_2++;
+								if (function_exists('ssr_log')) ssr_log("fetch_retards($date): UID $uid ($fn $ln) - Skipped (year 1-2, class $code)", 'info', 'api');
 								continue 2; // saute complètement cet élève
 							}
 							$cls = $code;
@@ -287,7 +303,11 @@ if (!function_exists('ssr_fetch_retards_by_date')) {
 					}
 				}
 
-				if (!$cls) continue; // pas de classe officielle valide
+				if (!$cls) {
+					$skipped_no_class++;
+					if (function_exists('ssr_log')) ssr_log("fetch_retards($date): UID $uid ($fn $ln) - Skipped (no official class)", 'warning', 'api');
+					continue;
+				}
 
 				// Simplification du statut
 				$statusText = [];
@@ -306,6 +326,13 @@ if (!function_exists('ssr_fetch_retards_by_date')) {
 				];
 			}
 		}
+
+		// Log de synthèse
+		$returned = count($list);
+		if (function_exists('ssr_log')) {
+			ssr_log("fetch_retards($date): Total=$total_retards | Returned=$returned | Skipped: no_user=$skipped_no_user, year_1-2=$skipped_year_1_2, no_class=$skipped_no_class", 'info', 'api');
+		}
+
 		return $list;
 	}
 }
