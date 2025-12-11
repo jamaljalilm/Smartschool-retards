@@ -55,10 +55,20 @@ function ssr_admin_test_messages_render(){
                     $result_msg = 'Erreur lors de l\'envoi : ' . esc_html($result->get_error_message());
                     $result_type = 'error';
 
-                    // Enregistrer l'échec dans l'historique
+                    // Vérifier et créer la table si nécessaire
                     global $wpdb;
-                    $wpdb->insert(
-                        $wpdb->prefix . 'smartschool_daily_messages',
+                    $table_name = $wpdb->prefix . 'smartschool_daily_messages';
+
+                    // Créer la table si elle n'existe pas
+                    if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+                        if (function_exists('ssr_db_maybe_create_tables')) {
+                            ssr_db_maybe_create_tables();
+                        }
+                    }
+
+                    // Enregistrer l'échec dans l'historique
+                    $insert_result = $wpdb->insert(
+                        $table_name,
                         [
                             'user_identifier' => $user_id,
                             'class_code' => null,
@@ -76,6 +86,11 @@ function ssr_admin_test_messages_render(){
                         ],
                         ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
                     );
+
+                    // Debug: afficher si l'insertion a échoué
+                    if ($insert_result === false) {
+                        $result_msg .= '<br><small style="color: #d63638;">⚠️ Erreur lors de l\'enregistrement dans l\'historique: ' . esc_html($wpdb->last_error) . '</small>';
+                    }
                 } else {
                     $coaccount_label = ($coaccount === null) ? 'compte principal' : 'coaccount ' . $coaccount;
                     $result_msg = 'Message envoyé avec succès à l\'utilisateur ' . esc_html($user_id) . ' (' . $coaccount_label . ')';
@@ -86,10 +101,20 @@ function ssr_admin_test_messages_render(){
                         ssr_log('Test message sent to ' . $user_id . ' (' . $coaccount_label . ')', 'info', 'admin-test');
                     }
 
-                    // Enregistrer dans l'historique
+                    // Vérifier et créer la table si nécessaire
                     global $wpdb;
-                    $wpdb->insert(
-                        $wpdb->prefix . 'smartschool_daily_messages',
+                    $table_name = $wpdb->prefix . 'smartschool_daily_messages';
+
+                    // Créer la table si elle n'existe pas
+                    if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+                        if (function_exists('ssr_db_maybe_create_tables')) {
+                            ssr_db_maybe_create_tables();
+                        }
+                    }
+
+                    // Enregistrer dans l'historique
+                    $insert_result = $wpdb->insert(
+                        $table_name,
                         [
                             'user_identifier' => $user_id,
                             'class_code' => null,
@@ -107,6 +132,11 @@ function ssr_admin_test_messages_render(){
                         ],
                         ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
                     );
+
+                    // Debug: afficher si l'insertion a échoué
+                    if ($insert_result === false) {
+                        $result_msg .= '<br><small style="color: #d63638;">⚠️ Le message a été envoyé mais n\'a pas pu être enregistré dans l\'historique. Erreur DB: ' . esc_html($wpdb->last_error) . '</small>';
+                    }
                 }
             } else {
                 $result_msg = 'Erreur : la fonction ssr_api_send_message n\'est pas disponible.';
