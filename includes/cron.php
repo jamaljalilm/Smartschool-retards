@@ -169,15 +169,59 @@ function ssr_cron_run_daily($manual=false){
         $body = str_replace('{classe}', $classe, $body);
 
         if (function_exists('ssr_api_send_message')) {
+            global $wpdb;
+            $table_name = $wpdb->prefix . 'smartschool_daily_messages';
 
             // 1) Élève : compte principal (coaccount = null)
             if ($send_to_student === '1') {
                 $res = ssr_api_send_message($uid, $title, $body, $sender, null, null, true);
                 if (is_wp_error($res)) {
                     if (function_exists('ssr_log')) ssr_log('Send FAIL (élève) uid='.$uid.' error='.$res->get_error_message(), 'error', 'cron');
+
+                    // Enregistrer l'échec dans l'historique
+                    $wpdb->insert(
+                        $table_name,
+                        [
+                            'user_identifier' => $uid,
+                            'class_code' => $classe,
+                            'last_name' => $nom,
+                            'first_name' => $prenom,
+                            'date_retard' => $date,
+                            'message_title' => $title,
+                            'message_content' => $body,
+                            'sent_to_student' => 1,
+                            'sent_to_parent1' => 0,
+                            'sent_to_parent2' => 0,
+                            'sent_at' => current_time('mysql'),
+                            'status' => 'failed',
+                            'error_message' => $res->get_error_message(),
+                        ],
+                        ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
+                    );
                 } else {
                     if (function_exists('ssr_log')) ssr_log('Send OK (élève) uid='.$uid, 'info', 'cron');
                     $sent++;
+
+                    // Enregistrer le succès dans l'historique
+                    $wpdb->insert(
+                        $table_name,
+                        [
+                            'user_identifier' => $uid,
+                            'class_code' => $classe,
+                            'last_name' => $nom,
+                            'first_name' => $prenom,
+                            'date_retard' => $date,
+                            'message_title' => $title,
+                            'message_content' => $body,
+                            'sent_to_student' => 1,
+                            'sent_to_parent1' => 0,
+                            'sent_to_parent2' => 0,
+                            'sent_at' => current_time('mysql'),
+                            'status' => 'success',
+                            'error_message' => null,
+                        ],
+                        ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
+                    );
                 }
             }
 
@@ -193,9 +237,51 @@ function ssr_cron_run_daily($manual=false){
                     $res_parent = ssr_api_send_message($uid, $title, $body, $sender, null, $co, true);
                     if (is_wp_error($res_parent)) {
                         if (function_exists('ssr_log')) ssr_log('Send FAIL (parent coaccount='.$co.') uid='.$uid.' error='.$res_parent->get_error_message(), 'error', 'cron');
+
+                        // Enregistrer l'échec dans l'historique
+                        $wpdb->insert(
+                            $table_name,
+                            [
+                                'user_identifier' => $uid,
+                                'class_code' => $classe,
+                                'last_name' => $nom,
+                                'first_name' => $prenom,
+                                'date_retard' => $date,
+                                'message_title' => $title,
+                                'message_content' => $body,
+                                'sent_to_student' => 0,
+                                'sent_to_parent1' => ($co === 1) ? 1 : 0,
+                                'sent_to_parent2' => ($co === 2) ? 1 : 0,
+                                'sent_at' => current_time('mysql'),
+                                'status' => 'failed',
+                                'error_message' => $res_parent->get_error_message(),
+                            ],
+                            ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
+                        );
                     } else {
                         if (function_exists('ssr_log')) ssr_log('Send OK (parent coaccount='.$co.') uid='.$uid, 'info', 'cron');
                         $sent++;
+
+                        // Enregistrer le succès dans l'historique
+                        $wpdb->insert(
+                            $table_name,
+                            [
+                                'user_identifier' => $uid,
+                                'class_code' => $classe,
+                                'last_name' => $nom,
+                                'first_name' => $prenom,
+                                'date_retard' => $date,
+                                'message_title' => $title,
+                                'message_content' => $body,
+                                'sent_to_student' => 0,
+                                'sent_to_parent1' => ($co === 1) ? 1 : 0,
+                                'sent_to_parent2' => ($co === 2) ? 1 : 0,
+                                'sent_at' => current_time('mysql'),
+                                'status' => 'success',
+                                'error_message' => null,
+                            ],
+                            ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
+                        );
                     }
                 }
             }
