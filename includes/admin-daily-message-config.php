@@ -36,9 +36,9 @@ function ssr_admin_daily_message_config_render(){
         update_option('ssr_daily_send_to_parents', $send_to_parents);
         update_option('ssr_daily_hhmm', $send_time);
 
-        // Replanifier le cron si l'heure a changé
-        if (function_exists('ssr_cron_maybe_reschedule_daily')) {
-            ssr_cron_maybe_reschedule_daily();
+        // Forcer la replanification du cron avec la nouvelle heure
+        if (function_exists('ssr_cron_force_reschedule')) {
+            ssr_cron_force_reschedule();
         }
 
         $saved = true;
