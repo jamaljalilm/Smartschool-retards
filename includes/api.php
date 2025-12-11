@@ -277,10 +277,6 @@ if (!function_exists('ssr_fetch_retards_by_date')) {
 					foreach ($user['groups'] as $g) {
 						if (!empty($g['isKlas']) && !empty($g['isOfficial'])) {
 							$code = isset($g['code']) ? $g['code'] : (isset($g['name']) ? $g['name'] : '');
-							// ⚡ Filtrer : on ignore les classes qui commencent par 1 ou 2
-							if (preg_match('/^[1-2]/', $code)) {
-								continue 2; // saute complètement cet élève
-							}
 							$cls = $code;
 							break;
 						}
