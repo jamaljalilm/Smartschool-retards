@@ -87,12 +87,12 @@ function ssr_cron_run_daily($manual=false){
         return;
     }
 
-    // ---- Exemple concret: envoyer un rappel aux élèves en retard aujourd’hui ----
+    // ---- Exemple concret: envoyer un rappel aux élèves en retard aujourd'hui ----
     // Tu peux adapter la logique (filtrer AM/PM, limiter par classe, etc.)
     $date = (new DateTime('now', wp_timezone()))->format('Y-m-d');
 
-    if (!function_exists('ssr_api_fetch_retards_by_date')) {
-        if (function_exists('ssr_log')) ssr_log('ssr_api_fetch_retards_by_date manquante', 'error', 'cron');
+    if (!function_exists('ssr_fetch_retards_by_date')) {
+        if (function_exists('ssr_log')) ssr_log('ssr_fetch_retards_by_date manquante', 'error', 'cron');
         return;
     }
 
