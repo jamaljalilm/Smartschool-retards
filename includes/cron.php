@@ -127,14 +127,27 @@ function ssr_cron_run_daily($manual=false){
         $uid = isset($r['userIdentifier']) ? $r['userIdentifier'] : '';
         if (!$uid) continue;
 
+        // Récupération des informations de l'élève
+        $prenom = isset($r['firstName']) ? $r['firstName'] : '';
+        $nom = isset($r['lastName']) ? $r['lastName'] : '';
+        $classe = isset($r['classCode']) ? $r['classCode'] : '';
+
+        // Remplacement des variables dans le titre et le corps
         $title = $titleTpl;
-        $body  = $bodyTpl;
+        $title = str_replace('{prenom}', $prenom, $title);
+        $title = str_replace('{nom}', $nom, $title);
+        $title = str_replace('{classe}', $classe, $title);
+
+        $body = $bodyTpl;
+        $body = str_replace('{prenom}', $prenom, $body);
+        $body = str_replace('{nom}', $nom, $body);
+        $body = str_replace('{classe}', $classe, $body);
 
         if (function_exists('ssr_api_send_message')) {
 
             // 1) Élève : compte principal (coaccount = null)
             if ($send_to_student === '1') {
-                $res = ssr_api_send_message($uid, $title, $body, $sender, null, null, false);
+                $res = ssr_api_send_message($uid, $title, $body, $sender, null, null, true);
                 if (is_wp_error($res)) {
                     if (function_exists('ssr_log')) ssr_log('Send FAIL (élève) uid='.$uid.' error='.$res->get_error_message(), 'error', 'cron');
                 } else {
@@ -152,7 +165,7 @@ function ssr_cron_run_daily($manual=false){
                         break 2; // sort du foreach principal
                     }
 
-                    $res_parent = ssr_api_send_message($uid, $title, $body, $sender, null, $co, false);
+                    $res_parent = ssr_api_send_message($uid, $title, $body, $sender, null, $co, true);
                     if (is_wp_error($res_parent)) {
                         if (function_exists('ssr_log')) ssr_log('Send FAIL (parent coaccount='.$co.') uid='.$uid.' error='.$res_parent->get_error_message(), 'error', 'cron');
                     } else {

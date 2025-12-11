@@ -54,6 +54,28 @@ function ssr_admin_test_messages_render(){
                 if (is_wp_error($result)) {
                     $result_msg = 'Erreur lors de l\'envoi : ' . esc_html($result->get_error_message());
                     $result_type = 'error';
+
+                    // Enregistrer l'échec dans l'historique
+                    global $wpdb;
+                    $wpdb->insert(
+                        $wpdb->prefix . 'smartschool_daily_messages',
+                        [
+                            'user_identifier' => $user_id,
+                            'class_code' => null,
+                            'last_name' => null,
+                            'first_name' => null,
+                            'date_retard' => current_time('Y-m-d'),
+                            'message_title' => $title,
+                            'message_content' => $body,
+                            'sent_to_student' => ($coaccount === null) ? 1 : 0,
+                            'sent_to_parent1' => ($coaccount === 1) ? 1 : 0,
+                            'sent_to_parent2' => ($coaccount === 2) ? 1 : 0,
+                            'sent_at' => current_time('mysql'),
+                            'status' => 'failed',
+                            'error_message' => $result->get_error_message(),
+                        ],
+                        ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
+                    );
                 } else {
                     $coaccount_label = ($coaccount === null) ? 'compte principal' : 'coaccount ' . $coaccount;
                     $result_msg = 'Message envoyé avec succès à l\'utilisateur ' . esc_html($user_id) . ' (' . $coaccount_label . ')';
@@ -63,6 +85,28 @@ function ssr_admin_test_messages_render(){
                     if (function_exists('ssr_log')) {
                         ssr_log('Test message sent to ' . $user_id . ' (' . $coaccount_label . ')', 'info', 'admin-test');
                     }
+
+                    // Enregistrer dans l'historique
+                    global $wpdb;
+                    $wpdb->insert(
+                        $wpdb->prefix . 'smartschool_daily_messages',
+                        [
+                            'user_identifier' => $user_id,
+                            'class_code' => null,
+                            'last_name' => null,
+                            'first_name' => null,
+                            'date_retard' => current_time('Y-m-d'),
+                            'message_title' => $title,
+                            'message_content' => $body,
+                            'sent_to_student' => ($coaccount === null) ? 1 : 0,
+                            'sent_to_parent1' => ($coaccount === 1) ? 1 : 0,
+                            'sent_to_parent2' => ($coaccount === 2) ? 1 : 0,
+                            'sent_at' => current_time('mysql'),
+                            'status' => 'success',
+                            'error_message' => null,
+                        ],
+                        ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
+                    );
                 }
             } else {
                 $result_msg = 'Erreur : la fonction ssr_api_send_message n\'est pas disponible.';

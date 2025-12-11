@@ -200,7 +200,7 @@ if (!function_exists('ssr_daily_send_messages_to_lates')) {
           $sender,     // expéditeur
           null,        // attachments
           null,        // coaccount (compte principal = null)
-          false        // copyToLVS
+          true         // copyToLVS
         );
 
         if (!is_wp_error($result)) {
@@ -215,7 +215,7 @@ if (!function_exists('ssr_daily_send_messages_to_lates')) {
       if ($send_to_parents === '1' && function_exists('ssr_api_send_message')) {
         // Parent 1 (coaccount 1)
         $expected_recipients++;
-        $result_p1 = ssr_api_send_message($uid, $title, $message, $sender, null, 1, false);
+        $result_p1 = ssr_api_send_message($uid, $title, $message, $sender, null, 1, true);
         if (!is_wp_error($result_p1)) {
           $sent_parent1 = true;
           $successful_recipients++;
@@ -223,7 +223,7 @@ if (!function_exists('ssr_daily_send_messages_to_lates')) {
 
         // Parent 2 (coaccount 2)
         $expected_recipients++;
-        $result_p2 = ssr_api_send_message($uid, $title, $message, $sender, null, 2, false);
+        $result_p2 = ssr_api_send_message($uid, $title, $message, $sender, null, 2, true);
         if (!is_wp_error($result_p2)) {
           $sent_parent2 = true;
           $successful_recipients++;
@@ -252,6 +252,7 @@ if (!function_exists('ssr_daily_send_messages_to_lates')) {
           'last_name' => $ln,
           'first_name' => $fn,
           'date_retard' => $today,
+          'message_title' => $title,
           'message_content' => $message,
           'sent_to_student' => $sent_student ? 1 : 0,
           'sent_to_parent1' => $sent_parent1 ? 1 : 0,
@@ -260,7 +261,7 @@ if (!function_exists('ssr_daily_send_messages_to_lates')) {
           'status' => $status,
           'error_message' => $error,
         ],
-        ['%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
+        ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
       );
     }
     

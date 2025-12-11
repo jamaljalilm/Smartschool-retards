@@ -43,6 +43,16 @@ add_action('admin_menu', function(){
         'ssr-daily-message-config',
         'ssr_admin_daily_message_config_render'
     );
+
+    // Sous-menu : Historique Messages
+    add_submenu_page(
+        'ssr-settings',
+        __('Historique Messages','smartschool-retards'),
+        __('📬 Historique Messages','smartschool-retards'),
+        'manage_options',
+        'ssr-message-history',
+        'ssr_admin_message_history_render'
+    );
 });
 
 /* ========================== PAGE ADMIN (réglages) ========================== */
