@@ -100,7 +100,20 @@ function ssr_api(string $method, array $params = []) {
         switch ($method) {
             case 'getAbsentsWithInternalNumberByDate': {
                 $date = isset($params['date']) ? ssr_to_ymd($params['date']) : ssr_to_ymd(date('Y-m-d'));
+
+                // Log pour debug
+                if (function_exists('ssr_log')) {
+                    ssr_log("SOAP call getAbsentsWithInternalNumberByDate with date: $date", 'info', 'api');
+                }
+
                 $res  = $client->__soapCall($method, [$accesscode, $date]);
+
+                // Log de la réponse
+                if (function_exists('ssr_log')) {
+                    $count = is_array($res) ? count($res) : 0;
+                    ssr_log("SOAP response: " . ($res === null ? 'null' : (is_array($res) ? "$count items" : gettype($res))), 'info', 'api');
+                }
+
                 break;
             }
             default: {
