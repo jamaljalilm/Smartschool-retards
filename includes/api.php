@@ -264,6 +264,10 @@ if (!function_exists('ssr_fetch_retards_by_date')) {
 				$user = ssr_api("getUserDetailsByNumber", ["internalNumber" => $uid]);
 				if (!is_array($user)) continue;
 
+				// Récupérer le vrai userIdentifier (accountCode au format INDL.XXXX)
+				$userIdent = isset($user['userIdentifier']) ? $user['userIdentifier'] :
+							(isset($user['accountCode']) ? $user['accountCode'] : $uid);
+
 				$ln = isset($user['naam']) ? $user['naam'] : '';
 				$fn = isset($user['voornaam']) ? $user['voornaam'] : '';
 
@@ -292,7 +296,8 @@ if (!function_exists('ssr_fetch_retards_by_date')) {
 				$statusText = $statusText ? implode("+", $statusText) : "—";
 
 				$list[] = [
-					'userIdentifier' => $uid,
+					'userIdentifier' => $userIdent,
+					'internalNumber' => $uid,
 					'class_code'     => $cls,
 					'last_name'      => $ln,
 					'first_name'     => $fn,
