@@ -33,9 +33,9 @@ function ssr_api(string $method, array $params = []) {
     // Pas d’extension SOAP -> pas d’appel
     if (!class_exists('SoapClient')) return [];
 
-    // Empêche PHP de bloquer trop longtemps si l’endpoint répond mal
-    $connTimeout = 6;   // secondes
-    $readTimeout = 10;  // secondes
+    // Empêche PHP de bloquer trop longtemps si l'endpoint répond mal
+    $connTimeout = 15;   // secondes (augmenté pour OVH)
+    $readTimeout = 30;   // secondes (augmenté pour OVH)
     $old_default_socket_timeout = @ini_get('default_socket_timeout');
     @ini_set('default_socket_timeout', (string)$readTimeout);
 
@@ -68,11 +68,21 @@ function ssr_api(string $method, array $params = []) {
                 'connection_timeout' => $connTimeout,
                 'stream_context'     => $ctx,
             ]);
+
+            // Log si WSDL fonctionne
+            if (function_exists('ssr_log') && $method === 'getAbsentsWithInternalNumberByDate') {
+                ssr_log("SOAP: Using WSDL mode for $method", 'info', 'api');
+            }
         }
     } catch (\Throwable $e) {
-        // Si le WSDL est KO, on évite d’insister pendant 5 minutes
+        // Si le WSDL est KO, on évite d'insister pendant 5 minutes
         $wsdl_down_until = time() + 300;
         $client = null;
+
+        // Log l'erreur WSDL
+        if (function_exists('ssr_log') && $method === 'getAbsentsWithInternalNumberByDate') {
+            ssr_log("SOAP: WSDL failed (" . $e->getMessage() . "), using fallback RPC/encoded", 'warning', 'api');
+        }
     }
 
     // Fallback sans WSDL (RPC/encoded) si besoin
@@ -89,8 +99,18 @@ function ssr_api(string $method, array $params = []) {
                 'stream_context'     => $ctx,
                 'features'           => SOAP_SINGLE_ELEMENT_ARRAYS,
             ]);
+
+            // Log si fallback utilisé
+            if (function_exists('ssr_log') && $method === 'getAbsentsWithInternalNumberByDate') {
+                ssr_log("SOAP: Using RPC/encoded fallback for $method", 'info', 'api');
+            }
         } catch (\Throwable $e) {
             @ini_set('default_socket_timeout', (string)$old_default_socket_timeout);
+
+            if (function_exists('ssr_log')) {
+                ssr_log("SOAP: Both WSDL and fallback failed: " . $e->getMessage(), 'error', 'api');
+            }
+
             return [];
         }
     }
