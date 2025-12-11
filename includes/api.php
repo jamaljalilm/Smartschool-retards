@@ -103,10 +103,27 @@ function ssr_api(string $method, array $params = []) {
 
                 // Log pour debug
                 if (function_exists('ssr_log')) {
-                    ssr_log("SOAP call getAbsentsWithInternalNumberByDate with date: $date", 'info', 'api');
+                    ssr_log("SOAP call getAbsentsWithInternalNumberByDate with date: $date (format YYYY-MM-DD)", 'info', 'api');
                 }
 
-                $res  = $client->__soapCall($method, [$accesscode, $date]);
+                // Tentative avec le format YYYY-MM-DD
+                try {
+                    $res = $client->__soapCall($method, [$accesscode, $date]);
+                } catch (\Throwable $e) {
+                    // Si ça échoue, essayer avec le format DD/MM/YYYY
+                    $parts = explode('-', $date);
+                    if (count($parts) === 3) {
+                        $date_alt = $parts[2] . '/' . $parts[1] . '/' . $parts[0]; // dd/mm/yyyy
+
+                        if (function_exists('ssr_log')) {
+                            ssr_log("SOAP retry with date: $date_alt (format DD/MM/YYYY)", 'info', 'api');
+                        }
+
+                        $res = $client->__soapCall($method, [$accesscode, $date_alt]);
+                    } else {
+                        throw $e; // Re-lance l'exception si on ne peut pas convertir
+                    }
+                }
 
                 // Log de la réponse
                 if (function_exists('ssr_log')) {
@@ -140,6 +157,12 @@ function ssr_api(string $method, array $params = []) {
 
     } catch (\Throwable $e) {
         @ini_set('default_socket_timeout', (string)$old_default_socket_timeout);
+
+        // Log l'erreur SOAP pour debugging
+        if (function_exists('ssr_log')) {
+            ssr_log("SOAP error on $method: " . $e->getMessage(), 'error', 'api');
+        }
+
         return [];
     }
 }}
