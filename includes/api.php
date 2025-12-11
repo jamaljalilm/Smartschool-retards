@@ -51,37 +51,32 @@ function ssr_api(string $method, array $params = []) {
         ],
     ]);
 
-    // Petit cache mémoire statique pour éviter de retenter le WSDL à chaque hit
-    static $wsdl_down_until = 0;
-
-    // Fabrique le SoapClient WSDL si possible
+    // Utiliser le WSDL local pour éviter les problèmes de connectivité OVH
     $client = null;
-    $wsdlUrl = $baseUrl . '/Webservices/V3?wsdl';
+    $wsdlLocalPath = dirname(__FILE__) . '/smartschool_v3.wsdl';
 
     try {
-        if (time() > $wsdl_down_until) {
-            $client = new SoapClient($wsdlUrl, [
-                'trace'              => 0,
-                'exceptions'         => true,
-                'cache_wsdl'         => WSDL_CACHE_NONE,
-                'features'           => SOAP_SINGLE_ELEMENT_ARRAYS,
-                'connection_timeout' => $connTimeout,
-                'stream_context'     => $ctx,
-            ]);
+        // Charger le WSDL local
+        $client = new SoapClient($wsdlLocalPath, [
+            'trace'              => 0,
+            'exceptions'         => true,
+            'cache_wsdl'         => WSDL_CACHE_NONE,
+            'features'           => SOAP_SINGLE_ELEMENT_ARRAYS,
+            'connection_timeout' => $connTimeout,
+            'stream_context'     => $ctx,
+            'location'           => $baseUrl . '/Webservices/V3',  // Override endpoint
+        ]);
 
-            // Log si WSDL fonctionne
-            if (function_exists('ssr_log') && $method === 'getAbsentsWithInternalNumberByDate') {
-                ssr_log("SOAP: Using WSDL mode for $method", 'info', 'api');
-            }
+        // Log si WSDL local fonctionne
+        if (function_exists('ssr_log') && $method === 'getAbsentsWithInternalNumberByDate') {
+            ssr_log("SOAP: Using local WSDL file for $method", 'info', 'api');
         }
     } catch (\Throwable $e) {
-        // Si le WSDL est KO, on évite d'insister pendant 5 minutes
-        $wsdl_down_until = time() + 300;
         $client = null;
 
         // Log l'erreur WSDL
         if (function_exists('ssr_log') && $method === 'getAbsentsWithInternalNumberByDate') {
-            ssr_log("SOAP: WSDL failed (" . $e->getMessage() . "), using fallback RPC/encoded", 'warning', 'api');
+            ssr_log("SOAP: Local WSDL failed (" . $e->getMessage() . "), using fallback RPC/encoded", 'warning', 'api');
         }
     }
 
