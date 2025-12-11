@@ -34,8 +34,8 @@ function ssr_api(string $method, array $params = []) {
     if (!class_exists('SoapClient')) return [];
 
     // Empêche PHP de bloquer trop longtemps si l'endpoint répond mal
-    $connTimeout = 15;   // secondes (augmenté pour OVH)
-    $readTimeout = 30;   // secondes (augmenté pour OVH)
+    $connTimeout = 30;   // secondes (augmenté à 30s pour OVH - getAbsentsWithInternalNumberByDate lent)
+    $readTimeout = 60;   // secondes (augmenté à 60s pour OVH - getAbsentsWithInternalNumberByDate lent)
     $old_default_socket_timeout = @ini_get('default_socket_timeout');
     @ini_set('default_socket_timeout', (string)$readTimeout);
 
