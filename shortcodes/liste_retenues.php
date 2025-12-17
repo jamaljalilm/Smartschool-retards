@@ -50,22 +50,6 @@ add_shortcode('liste_retenues', function() {
 
 	$students = $wpdb->get_results($query, ARRAY_A);
 
-	// 🔍 DEBUG - Vérifier tous les élèves (même ceux avec moins de 5 absences)
-	$debug_query = $wpdb->prepare("
-		SELECT
-			user_identifier,
-			MAX(first_name) as firstname,
-			MAX(last_name) as lastname,
-			MAX(class_code) as class_code,
-			COUNT(*) as nb_absences,
-			GROUP_CONCAT(CONCAT(date_retard, ':', status) ORDER BY date_retard SEPARATOR ' | ') as details
-		FROM {$ver}
-		WHERE date_retard <= %s
-		GROUP BY user_identifier
-		ORDER BY nb_absences DESC, MAX(last_name) ASC, MAX(first_name) ASC
-	", $today);
-	$all_students = $wpdb->get_results($debug_query, ARRAY_A);
-
 	// Calcul des statistiques
 	$total_students = count($students);
 	$count_5 = 0;
@@ -250,13 +234,19 @@ add_shortcode('liste_retenues', function() {
 		border-color: #e0e3e7;
 	}
 
-	/* Statistiques - Affichage 2-2 FORCÉ + Boutons cliquables */
+	/* Statistiques - Bouton "Tous" seul + 2x2 pour les autres */
 	.ssr-retenues-stats {
 		display: grid;
-		grid-template-columns: repeat(2, 1fr);
+		grid-template-columns: 1fr;
 		gap: 10px;
 		margin: 15px auto;
 		max-width: 1200px;
+	}
+
+	.ssr-retenues-filters {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 10px;
 	}
 
 	.ssr-stat-card {
@@ -296,21 +286,64 @@ add_shortcode('liste_retenues', function() {
 		margin-top: 4px;
 	}
 
+	/* Wrapper date de sanction */
+	.ssr-date-wrapper {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		justify-content: center;
+	}
+
 	/* Champ date de sanction */
 	.ssr-date-sanction {
 		padding: 6px 8px;
-		border: 1px solid #d1d5db;
+		border: 2px solid #d1d5db;
 		border-radius: 6px;
-		background: #fff;
+		background: #f3f4f6;
 		font-size: 14px;
-		width: 150px;
-		transition: border-color 0.2s;
+		width: 130px;
+		transition: all 0.2s;
+		text-align: center;
 	}
 
 	.ssr-date-sanction:focus {
 		border-color: #f57c00;
 		outline: none;
 		box-shadow: 0 0 0 2px rgba(245,124,0,0.1);
+	}
+
+	.ssr-date-sanction.has-value {
+		background: #e8f7ee;
+		border-color: #2e7d32;
+	}
+
+	/* Bouton croix pour annuler la date */
+	.ssr-clear-date {
+		background: #ef4444;
+		color: #fff;
+		border: none;
+		border-radius: 4px;
+		width: 24px;
+		height: 24px;
+		cursor: pointer;
+		font-size: 16px;
+		line-height: 1;
+		padding: 0;
+		display: none;
+		transition: background 0.2s;
+	}
+
+	.ssr-clear-date:hover {
+		background: #dc2626;
+	}
+
+	.ssr-date-wrapper.has-date .ssr-clear-date {
+		display: inline-block;
+	}
+
+	/* Centrer la date dans sa cellule */
+	.ssr-retenues-table td:last-child {
+		text-align: center;
 	}
 
 	/* Lignes cachées par le filtre */
@@ -327,20 +360,27 @@ add_shortcode('liste_retenues', function() {
 		}
 
 		.ssr-date-sanction {
-			width: 120px;
+			width: 110px;
 			font-size: 12px;
+		}
+
+		.ssr-clear-date {
+			width: 20px;
+			height: 20px;
+			font-size: 14px;
 		}
 	}
 </style>
 
 <script>
-// Filtrage par catégorie de sanction
 (function() {
+	// ===== Filtrage par catégorie de sanction =====
 	const filterBtns = document.querySelectorAll('.ssr-filter-btn');
 	const rows = document.querySelectorAll('.ssr-student-row');
 
 	filterBtns.forEach(btn => {
-		btn.addEventListener('click', function() {
+		btn.addEventListener('click', function(e) {
+			e.preventDefault();
 			const filter = this.getAttribute('data-filter');
 
 			// Retire la classe active de tous les boutons
@@ -358,6 +398,39 @@ add_shortcode('liste_retenues', function() {
 				}
 			});
 		});
+	});
+
+	// ===== Gestion des champs de date =====
+	document.querySelectorAll('.ssr-date-wrapper').forEach(wrapper => {
+		const input = wrapper.querySelector('.ssr-date-sanction');
+		const clearBtn = wrapper.querySelector('.ssr-clear-date');
+
+		if (!input || !clearBtn) return;
+
+		// Mettre à jour l'apparence selon la valeur
+		function updateAppearance() {
+			if (input.value) {
+				input.classList.add('has-value');
+				wrapper.classList.add('has-date');
+			} else {
+				input.classList.remove('has-value');
+				wrapper.classList.remove('has-date');
+			}
+		}
+
+		// Au changement de date
+		input.addEventListener('change', updateAppearance);
+		input.addEventListener('input', updateAppearance);
+
+		// Au clic sur la croix
+		clearBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			input.value = '';
+			updateAppearance();
+		});
+
+		// Initialisation
+		updateAppearance();
 	});
 })();
 </script>
@@ -400,83 +473,32 @@ add_shortcode('liste_retenues', function() {
 	<!-- Statistiques - BOUTONS FILTRES -->
 	<h3 style="text-align:left;margin-top:15px;margin-bottom:10px;font-weight:bold;">Filtrer par sanction</h3>
 	<div class="ssr-retenues-stats">
+		<!-- Bouton "Tous les élèves" seul sur sa ligne -->
 		<button type="button" class="ssr-stat-card ssr-filter-btn active" data-filter="all">
 			<div class="ssr-stat-number"><?php echo $total_students; ?></div>
 			<div class="ssr-stat-label">Tous les élèves</div>
 		</button>
-		<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="5-9">
-			<div class="ssr-stat-number"><?php echo $count_5; ?></div>
-			<div class="ssr-stat-label">Retenue 1<br>(5-9 absences)</div>
-		</button>
-		<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="10-14">
-			<div class="ssr-stat-number"><?php echo $count_10; ?></div>
-			<div class="ssr-stat-label">Retenue 2<br>(10-14 absences)</div>
-		</button>
-		<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="15-19">
-			<div class="ssr-stat-number"><?php echo $count_15; ?></div>
-			<div class="ssr-stat-label">Demi-jour de renvoi<br>(15-19 absences)</div>
-		</button>
-		<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="20+">
-			<div class="ssr-stat-number"><?php echo $count_20; ?></div>
-			<div class="ssr-stat-label">Jour de renvoi<br>(20+ absences)</div>
-		</button>
-	</div>
 
-	<!-- 🔍 PANNEAU DE DEBUG (à supprimer après test) -->
-	<details style="margin:20px 0;padding:15px;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;">
-		<summary style="cursor:pointer;font-weight:bold;color:#856404;">🔍 Debug : Voir tous les élèves (cliquer pour afficher)</summary>
-		<div style="margin-top:15px;font-family:monospace;font-size:12px;max-height:400px;overflow-y:auto;">
-			<p style="margin:0 0 10px 0;color:#856404;">
-				<strong>Total d'élèves dans la base :</strong> <?php echo count($all_students); ?><br>
-				<strong>Élèves affichés (≥5 absences) :</strong> <?php echo count($students); ?><br>
-				<strong>Date de référence :</strong> <?php echo esc_html($today); ?>
-			</p>
-			<table style="width:100%;border-collapse:collapse;font-size:11px;">
-				<thead>
-					<tr style="background:#856404;color:#fff;">
-						<th style="padding:5px;border:1px solid #ccc;">Nom</th>
-						<th style="padding:5px;border:1px solid #ccc;">Prénom</th>
-						<th style="padding:5px;border:1px solid #ccc;">Classe</th>
-						<th style="padding:5px;border:1px solid #ccc;">Total</th>
-						<th style="padding:5px;border:1px solid #ccc;">Absents</th>
-						<th style="padding:5px;border:1px solid #ccc;">Présents</th>
-						<th style="padding:5px;border:1px solid #ccc;">Détails</th>
-					</tr>
-				</thead>
-				<tbody>
-					<?php foreach ($all_students as $s):
-						$details_arr = explode(' | ', $s['details'] ?? '');
-						$count_absent = 0;
-						$count_present = 0;
-						foreach ($details_arr as $d) {
-							if (strpos($d, ':absent') !== false) $count_absent++;
-							elseif (strpos($d, ':present') !== false) $count_present++;
-						}
-						$row_color = ($count_absent >= 5) ? '#e8f5e9' : '#fafafa';
-					?>
-					<tr style="background:<?php echo $row_color; ?>;">
-						<td style="padding:5px;border:1px solid #ccc;"><?php echo esc_html($s['lastname'] ?? '—'); ?></td>
-						<td style="padding:5px;border:1px solid #ccc;"><?php echo esc_html($s['firstname'] ?? '—'); ?></td>
-						<td style="padding:5px;border:1px solid #ccc;"><?php echo esc_html($s['class_code'] ?? '—'); ?></td>
-						<td style="padding:5px;border:1px solid #ccc;font-weight:bold;"><?php echo (int)$s['nb_absences']; ?></td>
-						<td style="padding:5px;border:1px solid #ccc;color:#d32f2f;font-weight:bold;"><?php echo $count_absent; ?></td>
-						<td style="padding:5px;border:1px solid #ccc;color:#2e7d32;"><?php echo $count_present; ?></td>
-						<td style="padding:5px;border:1px solid #ccc;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?php echo esc_attr($s['details'] ?? ''); ?>">
-							<?php echo esc_html($s['details'] ?? '—'); ?>
-						</td>
-					</tr>
-					<?php endforeach; ?>
-				</tbody>
-			</table>
-			<p style="margin:15px 0 0 0;color:#856404;font-size:11px;">
-				<strong>Légende :</strong><br>
-				• Fond vert clair = Élève avec ≥5 absences (devrait apparaître dans la liste)<br>
-				• Fond gris = Élève avec &lt;5 absences (ne devrait pas apparaître)<br>
-				• Colonne "Absents" = Nombre de lignes avec status='absent'<br>
-				• Colonne "Présents" = Nombre de lignes avec status='present'
-			</p>
+		<!-- Grille 2x2 pour les autres boutons -->
+		<div class="ssr-retenues-filters">
+			<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="5-9">
+				<div class="ssr-stat-number"><?php echo $count_5; ?></div>
+				<div class="ssr-stat-label">Retenue 1<br>(5-9 absences)</div>
+			</button>
+			<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="10-14">
+				<div class="ssr-stat-number"><?php echo $count_10; ?></div>
+				<div class="ssr-stat-label">Retenue 2<br>(10-14 absences)</div>
+			</button>
+			<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="15-19">
+				<div class="ssr-stat-number"><?php echo $count_15; ?></div>
+				<div class="ssr-stat-label">Demi-jour de renvoi<br>(15-19 absences)</div>
+			</button>
+			<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="20+">
+				<div class="ssr-stat-number"><?php echo $count_20; ?></div>
+				<div class="ssr-stat-label">Jour de renvoi<br>(20+ absences)</div>
+			</button>
 		</div>
-	</details>
+	</div>
 
 	<?php if (empty($students)): ?>
 		<div style="padding:20px;text-align:center;background:#f9fafb;border:1px solid #e6eaef;border-radius:8px;margin:20px auto;max-width:600px;">
@@ -533,7 +555,10 @@ add_shortcode('liste_retenues', function() {
 					</span>
 				</td>
 				<td>
-					<input type="date" class="ssr-date-sanction" min="<?php echo esc_attr($today); ?>" value="" />
+					<div class="ssr-date-wrapper">
+						<input type="date" class="ssr-date-sanction" placeholder="JJ/MM/AAAA" value="" />
+						<button type="button" class="ssr-clear-date" title="Annuler la date">×</button>
+					</div>
 				</td>
 			</tr>
 			<?php endforeach; ?>
