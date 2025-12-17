@@ -134,25 +134,33 @@ function ssr_to_ymd($s){
  * - Vendredi : [jeudi]
  * - Samedi/Dimanche : [] (pas de retards le week-end)
  *
+ * @param string|null $date Date au format Y-m-d (si null, utilise aujourd'hui)
  * @return array Liste de dates au format Y-m-d
  */
 if (!function_exists('ssr_prev_days_for_check')) {
-function ssr_prev_days_for_check() {
+function ssr_prev_days_for_check($date = null) {
     $tz = new DateTimeZone('Europe/Brussels');
-    $today = new DateTime('now', $tz);
-    $dow = (int)$today->format('N'); // 1=lundi, 2=mardi, ..., 7=dimanche
+
+    // Si aucune date fournie, utilise aujourd'hui
+    if ($date === null) {
+        $targetDate = new DateTime('now', $tz);
+    } else {
+        $targetDate = new DateTime($date, $tz);
+    }
+
+    $dow = (int)$targetDate->format('N'); // 1=lundi, 2=mardi, ..., 7=dimanche
 
     $dates = [];
 
     switch ($dow) {
         case 1: // Lundi → Vendredi dernier
-            $prev = clone $today;
+            $prev = clone $targetDate;
             $prev->modify('-3 days');
             $dates[] = $prev->format('Y-m-d');
             break;
 
         case 2: // Mardi → Lundi
-            $prev = clone $today;
+            $prev = clone $targetDate;
             $prev->modify('-1 day');
             $dates[] = $prev->format('Y-m-d');
             break;
@@ -162,17 +170,17 @@ function ssr_prev_days_for_check() {
             break;
 
         case 4: // Jeudi → Mardi ET Mercredi
-            $mardi = clone $today;
+            $mardi = clone $targetDate;
             $mardi->modify('-2 days');
             $dates[] = $mardi->format('Y-m-d');
 
-            $mercredi = clone $today;
+            $mercredi = clone $targetDate;
             $mercredi->modify('-1 day');
             $dates[] = $mercredi->format('Y-m-d');
             break;
 
         case 5: // Vendredi → Jeudi
-            $prev = clone $today;
+            $prev = clone $targetDate;
             $prev->modify('-1 day');
             $dates[] = $prev->format('Y-m-d');
             break;

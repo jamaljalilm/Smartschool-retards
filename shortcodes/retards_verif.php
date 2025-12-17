@@ -92,7 +92,7 @@ add_shortcode('retards_verif',function(){
 
 		// === TOUJOURS utiliser la logique métier ===
 		if (function_exists('ssr_prev_days_for_check')) {
-			$dates = ssr_prev_days_for_check();
+			$dates = ssr_prev_days_for_check($date); // Passe la date sélectionnée
 		} else {
 			// Filet de sécurité si la fonction n'existe pas
 			$dates = in_array($dow, [3,6,7], true) ? [] : [ $date ];
