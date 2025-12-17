@@ -130,7 +130,7 @@ function ssr_to_ymd($s){
  * - Lundi : [vendredi dernier]
  * - Mardi : [lundi]
  * - Mercredi : [] (pas de retards le mercredi)
- * - Jeudi : [mardi] (mercredi est sauté car pas de retards)
+ * - Jeudi : [mardi, mercredi] (vérification des deux jours précédents)
  * - Vendredi : [jeudi]
  * - Samedi/Dimanche : [] (pas de retards le week-end)
  *
@@ -161,10 +161,14 @@ function ssr_prev_days_for_check() {
             $dates = [];
             break;
 
-        case 4: // Jeudi → Mardi (saute mercredi)
-            $prev = clone $today;
-            $prev->modify('-2 days');
-            $dates[] = $prev->format('Y-m-d');
+        case 4: // Jeudi → Mardi ET Mercredi
+            $mardi = clone $today;
+            $mardi->modify('-2 days');
+            $dates[] = $mardi->format('Y-m-d');
+
+            $mercredi = clone $today;
+            $mercredi->modify('-1 day');
+            $dates[] = $mercredi->format('Y-m-d');
             break;
 
         case 5: // Vendredi → Jeudi
