@@ -266,10 +266,11 @@ function ssr_admin_test_messages_render(){
                         </th>
                         <td>
                             <?php
-                            $default_message = '<div>
+                            $default_message = <<<'HTML'
+<div>
 <p style="margin-bottom: 15px;">Bonjour {prenom},</p>
-<p style="margin-bottom: 15px;">Tu as été en retard aujourd\'hui. Tu seras donc <span style="color: #e03e2d;"><strong>privé de sortie</strong></span> la prochaine pause de midi. Merci de venir te présenter à la prochaine pause de midi à <strong>l\'accueil à 13h05</strong>.</p>
-<p style="margin-bottom: 15px;">⚠️ N\'oublie pas de prévoir de quoi manger.</p>
+<p style="margin-bottom: 15px;">Tu as été en retard aujourd'hui. Tu seras donc <span style="color: #e03e2d;"><strong>privé de sortie</strong></span> la prochaine pause de midi. Merci de venir te présenter à la prochaine pause de midi à <strong>l'accueil à 13h05</strong>.</p>
+<p style="margin-bottom: 15px;">⚠️ N'oublie pas de prévoir de quoi manger.</p>
 <p style="margin-bottom: 15px;"><strong>Attention :</strong></p>
 
 <ul style="margin-bottom: 5px;">
@@ -292,7 +293,8 @@ function ssr_admin_test_messages_render(){
 </tr>
 </tbody>
 </table>
-</div>';
+</div>
+HTML;
                             $message_content = isset($_POST['message_body']) ? wp_kses_post($_POST['message_body']) : $default_message;
 
                             wp_editor(
