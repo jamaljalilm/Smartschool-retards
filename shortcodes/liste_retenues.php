@@ -26,8 +26,8 @@ add_shortcode('liste_retenues', function() {
 	$query = $wpdb->prepare("
 		SELECT
 			user_identifier,
-			MAX(firstname) as firstname,
-			MAX(lastname) as lastname,
+			MAX(first_name) as firstname,
+			MAX(last_name) as lastname,
 			MAX(class_code) as class_code,
 			COUNT(*) as nb_absences
 		FROM {$ver}
@@ -35,7 +35,7 @@ add_shortcode('liste_retenues', function() {
 		  AND date_retard <= %s
 		GROUP BY user_identifier
 		HAVING nb_absences >= 5
-		ORDER BY nb_absences DESC, lastname ASC, firstname ASC
+		ORDER BY MAX(last_name) ASC, MAX(first_name) ASC, nb_absences DESC
 	", $today);
 
 	$students = $wpdb->get_results($query, ARRAY_A);
@@ -44,15 +44,15 @@ add_shortcode('liste_retenues', function() {
 	$debug_query = $wpdb->prepare("
 		SELECT
 			user_identifier,
-			MAX(firstname) as firstname,
-			MAX(lastname) as lastname,
+			MAX(first_name) as firstname,
+			MAX(last_name) as lastname,
 			MAX(class_code) as class_code,
 			COUNT(*) as nb_absences,
 			GROUP_CONCAT(CONCAT(date_retard, ':', status) ORDER BY date_retard SEPARATOR ' | ') as details
 		FROM {$ver}
 		WHERE date_retard <= %s
 		GROUP BY user_identifier
-		ORDER BY nb_absences DESC, lastname ASC, firstname ASC
+		ORDER BY nb_absences DESC, MAX(last_name) ASC, MAX(first_name) ASC
 	", $today);
 	$all_students = $wpdb->get_results($debug_query, ARRAY_A);
 
