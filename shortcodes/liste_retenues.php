@@ -32,7 +32,7 @@ add_shortcode('liste_retenues', function() {
 			COUNT(*) as nb_absences
 		FROM {$ver}
 		WHERE status = 'absent'
-		  AND date_retard <= %s
+		  AND date_jour <= %s
 		GROUP BY user_identifier
 		HAVING nb_absences >= 5
 		ORDER BY nb_absences DESC, lastname ASC, firstname ASC
@@ -48,9 +48,9 @@ add_shortcode('liste_retenues', function() {
 			MAX(lastname) as lastname,
 			MAX(class_code) as class_code,
 			COUNT(*) as nb_absences,
-			GROUP_CONCAT(CONCAT(date_retard, ':', status) ORDER BY date_retard SEPARATOR ' | ') as details
+			GROUP_CONCAT(CONCAT(date_jour, ':', status) ORDER BY date_jour SEPARATOR ' | ') as details
 		FROM {$ver}
-		WHERE date_retard <= %s
+		WHERE date_jour <= %s
 		GROUP BY user_identifier
 		ORDER BY nb_absences DESC, lastname ASC, firstname ASC
 	", $today);
