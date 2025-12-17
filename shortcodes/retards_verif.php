@@ -90,16 +90,11 @@ add_shortcode('retards_verif',function(){
 		// === Construction de $dates selon la règle métier
 		$dow = (int)(new DateTimeImmutable($date, $tz))->format('N'); // 1=lundi ... 7=dimanche
 
-		// 🔍 DEBUG - À supprimer après test
-		$debug_info = [];
-		$debug_info[] = "📅 Date courante (\$date): " . $date;
-		$debug_info[] = "📆 Jour de la semaine (\$dow): " . $dow . " (" . ['','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][$dow] . ")";
-		$debug_info[] = "🔗 Paramètre URL (\$req): " . ($req ?: '(vide)');
-		$debug_info[] = "✅ Fonction existe? " . (function_exists('ssr_prev_days_for_check') ? 'OUI' : 'NON');
-
-		if (!empty($req)) {
-		  // Sélection explicite via ?date=YYYY-MM-DD
-		  $debug_info[] = "🛤️ Branche: Sélection explicite (paramètre ?date= présent)";
+		// === Logique de sélection des dates ===
+		// Si l'utilisateur a sélectionné manuellement une date DIFFÉRENTE d'aujourd'hui,
+		// on affiche cette date spécifique. Sinon, on utilise la logique métier.
+		if (!empty($req) && $date !== $today) {
+		  // Sélection manuelle d'une date passée/future
 		  if (in_array($dow, [3,6,7], true)) {
 			// Mercredi / Samedi / Dimanche => aucun élève
 			$dates = [];
@@ -107,26 +102,15 @@ add_shortcode('retards_verif',function(){
 			$dates = [ $date ];
 		  }
 		} else {
-		  // Vue par défaut (pas de ?date=) => logique multi-jours
-		  $debug_info[] = "🛤️ Branche: Vue par défaut (pas de paramètre ?date=)";
+		  // Vue par défaut (pas de ?date= OU ?date=[aujourd'hui])
+		  // → Utiliser la logique métier pour afficher les retards à vérifier
 		  if (function_exists('ssr_prev_days_for_check')) {
-			$dates = ssr_prev_days_for_check(); // doit déjà renvoyer [] pour mer/sam/dim et mar+mer le jeudi
-			$debug_info[] = "🎯 Utilise ssr_prev_days_for_check()";
+			$dates = ssr_prev_days_for_check();
 		  } else {
 			// Filet de sécurité si la fonction n'existe pas
 			$dates = in_array($dow, [3,6,7], true) ? [] : [ $date ];
-			$debug_info[] = "⚠️ Fonction n'existe pas, utilise fallback";
 		  }
 		}
-		$debug_info[] = "📋 Dates à vérifier (\$dates): " . (empty($dates) ? '(aucune)' : implode(', ', $dates));
-
-		// Affiche le debug
-		$message .= "<div style='padding:15px;margin:10px 0;background:#fff3cd;color:#856404;border:1px solid #ffc107;border-radius:6px;font-family:monospace;font-size:13px;'>";
-		$message .= "<strong>🔍 DEBUG (à supprimer après test)</strong><br>";
-		foreach ($debug_info as $info) {
-			$message .= esc_html($info) . "<br>";
-		}
-		$message .= "</div>";
 
 
 
