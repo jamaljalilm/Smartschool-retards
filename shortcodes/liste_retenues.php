@@ -14,6 +14,16 @@ add_shortcode('liste_retenues', function() {
 	global $wpdb;
 	$ver = $wpdb->prefix . 'smartschool_retards_verif';
 
+	// Vérifier que la table existe (comme dans recap_retards.php ligne 102)
+	$has_verif = $wpdb->get_var($wpdb->prepare(
+		"SHOW TABLES LIKE %s",
+		$wpdb->esc_like($ver)
+	)) === $ver;
+
+	if (!$has_verif) {
+		return '<p style="color:red;">⚠️ La table ' . esc_html($ver) . ' n\'existe pas dans la base de données.</p>';
+	}
+
 	// Timezone
 	$tz = wp_timezone();
 	$today = (new DateTime('now', $tz))->format('Y-m-d');
@@ -22,7 +32,7 @@ add_shortcode('liste_retenues', function() {
 	$verifier = function_exists('ssr_current_verifier') ? ssr_current_verifier() : null;
 	$verifier_name = $verifier['name'] ?? '';
 
-	// Compte les absences par élève jusqu'à aujourd'hui
+	// Compte les absences par élève jusqu'à aujourd'hui (EXACTEMENT comme recap_retards ligne 108)
 	$query = $wpdb->prepare("
 		SELECT
 			user_identifier,
