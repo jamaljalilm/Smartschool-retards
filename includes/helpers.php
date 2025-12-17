@@ -123,3 +123,61 @@ function ssr_to_ymd($s){
     $dt = DateTime::createFromFormat('!d/m/Y', $s) ?: DateTime::createFromFormat('!Y-m-d', $s) ?: new DateTime($s);
     return $dt ? $dt->format('Y-m-d') : date('Y-m-d');
 }}
+
+/**
+ * Retourne les dates à vérifier pour la page "Vérifier retards"
+ * Logique métier :
+ * - Lundi : [vendredi dernier]
+ * - Mardi : [lundi]
+ * - Mercredi : [] (pas de retards le mercredi)
+ * - Jeudi : [mardi] (mercredi est sauté car pas de retards)
+ * - Vendredi : [jeudi]
+ * - Samedi/Dimanche : [] (pas de retards le week-end)
+ *
+ * @return array Liste de dates au format Y-m-d
+ */
+if (!function_exists('ssr_prev_days_for_check')) {
+function ssr_prev_days_for_check() {
+    $tz = new DateTimeZone('Europe/Brussels');
+    $today = new DateTime('now', $tz);
+    $dow = (int)$today->format('N'); // 1=lundi, 2=mardi, ..., 7=dimanche
+
+    $dates = [];
+
+    switch ($dow) {
+        case 1: // Lundi → Vendredi dernier
+            $prev = clone $today;
+            $prev->modify('-3 days');
+            $dates[] = $prev->format('Y-m-d');
+            break;
+
+        case 2: // Mardi → Lundi
+            $prev = clone $today;
+            $prev->modify('-1 day');
+            $dates[] = $prev->format('Y-m-d');
+            break;
+
+        case 3: // Mercredi → Aucun retard
+            $dates = [];
+            break;
+
+        case 4: // Jeudi → Mardi (saute mercredi)
+            $prev = clone $today;
+            $prev->modify('-2 days');
+            $dates[] = $prev->format('Y-m-d');
+            break;
+
+        case 5: // Vendredi → Jeudi
+            $prev = clone $today;
+            $prev->modify('-1 day');
+            $dates[] = $prev->format('Y-m-d');
+            break;
+
+        case 6: // Samedi → Aucun retard
+        case 7: // Dimanche → Aucun retard
+            $dates = [];
+            break;
+    }
+
+    return $dates;
+}}
