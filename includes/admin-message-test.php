@@ -22,8 +22,8 @@ function ssr_admin_test_messages_render(){
         check_admin_referer('ssr_test_send_message', 'ssr_test_nonce');
 
         $user_id     = isset($_POST['user_identifier']) ? sanitize_text_field($_POST['user_identifier']) : '';
-        $title       = isset($_POST['message_title']) ? sanitize_text_field($_POST['message_title']) : '';
-        $body        = isset($_POST['message_body']) ? wp_kses_post($_POST['message_body']) : '';
+        $title       = isset($_POST['message_title']) ? sanitize_text_field(wp_unslash($_POST['message_title'])) : '';
+        $body        = isset($_POST['message_body']) ? wp_kses_post(wp_unslash($_POST['message_body'])) : '';
         $sender      = isset($_POST['sender_identifier']) ? sanitize_text_field($_POST['sender_identifier']) : 'Null';
         $coaccount   = isset($_POST['coaccount']) ? intval($_POST['coaccount']) : null;
         $copy_to_lvs = !empty($_POST['copy_to_lvs']);
@@ -256,7 +256,7 @@ function ssr_admin_test_messages_render(){
                                    class="regular-text"
                                    required
                                    placeholder="Ex: Retard - Interdiction de sortir"
-                                   value="<?php echo isset($_POST['message_title']) ? esc_attr($_POST['message_title']) : 'Retard - Interdiction de sortir'; ?>">
+                                   value="<?php echo isset($_POST['message_title']) ? esc_attr(wp_unslash($_POST['message_title'])) : 'Retard - Interdiction de sortir'; ?>">
                         </td>
                     </tr>
 
@@ -295,7 +295,7 @@ function ssr_admin_test_messages_render(){
 </table>
 </div>
 HTML;
-                            $message_content = isset($_POST['message_body']) ? wp_kses_post($_POST['message_body']) : $default_message;
+                            $message_content = isset($_POST['message_body']) ? wp_kses_post(wp_unslash($_POST['message_body'])) : $default_message;
 
                             wp_editor(
                                 $message_content,
