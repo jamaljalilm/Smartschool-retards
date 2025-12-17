@@ -33,46 +33,27 @@ function ssr_api(string $method, array $params = []) {
     // Pas d’extension SOAP -> pas d’appel
     if (!class_exists('SoapClient')) return [];
 
-    // Empêche PHP de bloquer trop longtemps si l’endpoint répond mal
-    $connTimeout = 6;   // secondes
-    $readTimeout = 10;  // secondes
+    // Timeout élevé pour OVH - getAbsentsWithInternalNumberByDate peut être lent
     $old_default_socket_timeout = @ini_get('default_socket_timeout');
-    @ini_set('default_socket_timeout', (string)$readTimeout);
+    @ini_set('default_socket_timeout', '120'); // 2 minutes max (limite PHP OVH)
 
-    // Contexte SSL (on reste strict, mais neutre si defaults)
+    // Contexte SSL - désactivé pour OVH qui bloque les connexions HTTPS sortantes
     $ctx = stream_context_create([
         'http' => [
-            'timeout' => $readTimeout,
+            'timeout' => 120, // 2 minutes max
         ],
         'ssl' => [
-            // laisser les valeurs par défaut (verification true)
-            // 'verify_peer' => true,
-            // 'verify_peer_name' => true,
+            'verify_peer' => false,       // Désactivé pour OVH
+            'verify_peer_name' => false,  // Désactivé pour OVH
+            'allow_self_signed' => true,
         ],
     ]);
 
-    // Petit cache mémoire statique pour éviter de retenter le WSDL à chaque hit
-    static $wsdl_down_until = 0;
-
-    // Fabrique le SoapClient WSDL si possible
+    // OVH bloque le WSDL - utiliser directement le mode RPC/encoded
     $client = null;
-    $wsdlUrl = $baseUrl . '/Webservices/V3?wsdl';
 
-    try {
-        if (time() > $wsdl_down_until) {
-            $client = new SoapClient($wsdlUrl, [
-                'trace'              => 0,
-                'exceptions'         => true,
-                'cache_wsdl'         => WSDL_CACHE_NONE,
-                'features'           => SOAP_SINGLE_ELEMENT_ARRAYS,
-                'connection_timeout' => $connTimeout,
-                'stream_context'     => $ctx,
-            ]);
-        }
-    } catch (\Throwable $e) {
-        // Si le WSDL est KO, on évite d’insister pendant 5 minutes
-        $wsdl_down_until = time() + 300;
-        $client = null;
+    if (function_exists('ssr_log') && $method === 'getAbsentsWithInternalNumberByDate') {
+        ssr_log("SOAP: Skipping WSDL (OVH compatibility), using RPC/encoded", 'info', 'api');
     }
 
     // Fallback sans WSDL (RPC/encoded) si besoin
@@ -85,12 +66,21 @@ function ssr_api(string $method, array $params = []) {
                 'use'                => SOAP_ENCODED,
                 'trace'              => 0,
                 'exceptions'         => true,
-                'connection_timeout' => $connTimeout,
                 'stream_context'     => $ctx,
                 'features'           => SOAP_SINGLE_ELEMENT_ARRAYS,
             ]);
+
+            // Log si fallback utilisé
+            if (function_exists('ssr_log') && $method === 'getAbsentsWithInternalNumberByDate') {
+                ssr_log("SOAP: Using RPC/encoded fallback for $method", 'info', 'api');
+            }
         } catch (\Throwable $e) {
             @ini_set('default_socket_timeout', (string)$old_default_socket_timeout);
+
+            if (function_exists('ssr_log')) {
+                ssr_log("SOAP: Both WSDL and fallback failed: " . $e->getMessage(), 'error', 'api');
+            }
+
             return [];
         }
     }
@@ -100,7 +90,37 @@ function ssr_api(string $method, array $params = []) {
         switch ($method) {
             case 'getAbsentsWithInternalNumberByDate': {
                 $date = isset($params['date']) ? ssr_to_ymd($params['date']) : ssr_to_ymd(date('Y-m-d'));
-                $res  = $client->__soapCall($method, [$accesscode, $date]);
+
+                // Log pour debug
+                if (function_exists('ssr_log')) {
+                    ssr_log("SOAP call getAbsentsWithInternalNumberByDate with date: $date (format YYYY-MM-DD)", 'info', 'api');
+                }
+
+                // Tentative avec le format YYYY-MM-DD
+                try {
+                    $res = $client->__soapCall($method, [$accesscode, $date]);
+                } catch (\Throwable $e) {
+                    // Si ça échoue, essayer avec le format DD/MM/YYYY
+                    $parts = explode('-', $date);
+                    if (count($parts) === 3) {
+                        $date_alt = $parts[2] . '/' . $parts[1] . '/' . $parts[0]; // dd/mm/yyyy
+
+                        if (function_exists('ssr_log')) {
+                            ssr_log("SOAP retry with date: $date_alt (format DD/MM/YYYY)", 'info', 'api');
+                        }
+
+                        $res = $client->__soapCall($method, [$accesscode, $date_alt]);
+                    } else {
+                        throw $e; // Re-lance l'exception si on ne peut pas convertir
+                    }
+                }
+
+                // Log de la réponse
+                if (function_exists('ssr_log')) {
+                    $count = is_array($res) ? count($res) : 0;
+                    ssr_log("SOAP response: " . ($res === null ? 'null' : (is_array($res) ? "$count items" : gettype($res))), 'info', 'api');
+                }
+
                 break;
             }
             default: {
@@ -127,6 +147,12 @@ function ssr_api(string $method, array $params = []) {
 
     } catch (\Throwable $e) {
         @ini_set('default_socket_timeout', (string)$old_default_socket_timeout);
+
+        // Log l'erreur SOAP pour debugging
+        if (function_exists('ssr_log')) {
+            ssr_log("SOAP error on $method: " . $e->getMessage(), 'error', 'api');
+        }
+
         return [];
     }
 }}
@@ -252,7 +278,15 @@ if (!function_exists('ssr_fetch_retards_by_date')) {
 		$list = [];
 		$abs = ssr_api("getAbsentsWithInternalNumberByDate", ["date" => $date]);
 
-		if (!is_array($abs)) return $list;
+		if (!is_array($abs)) {
+			if (function_exists('ssr_log')) ssr_log("fetch_retards($date): API returned non-array", 'warning', 'api');
+			return $list;
+		}
+
+		$total_retards = 0;
+		$skipped_no_user = 0;
+		$skipped_year_1_2 = 0;
+		$skipped_no_class = 0;
 
 		foreach ($abs as $uid => $slots) {
 			// Vérifie retard matin ou aprem
@@ -260,9 +294,19 @@ if (!function_exists('ssr_fetch_retards_by_date')) {
 					 || (isset($slots['pm']) && $slots['pm'] === 'R');
 
 			if ($isRetard) {
+				$total_retards++;
+
 				// ⚡ Récup infos élève
 				$user = ssr_api("getUserDetailsByNumber", ["internalNumber" => $uid]);
-				if (!is_array($user)) continue;
+				if (!is_array($user)) {
+					$skipped_no_user++;
+					if (function_exists('ssr_log')) ssr_log("fetch_retards($date): UID $uid - getUserDetailsByNumber failed", 'warning', 'api');
+					continue;
+				}
+
+				// Récupérer le vrai userIdentifier (accountCode au format INDL.XXXX)
+				$userIdent = isset($user['userIdentifier']) ? $user['userIdentifier'] :
+							(isset($user['accountCode']) ? $user['accountCode'] : $uid);
 
 				$ln = isset($user['naam']) ? $user['naam'] : '';
 				$fn = isset($user['voornaam']) ? $user['voornaam'] : '';
@@ -275,6 +319,8 @@ if (!function_exists('ssr_fetch_retards_by_date')) {
 							$code = isset($g['code']) ? $g['code'] : (isset($g['name']) ? $g['name'] : '');
 							// ⚡ Filtrer : on ignore les classes qui commencent par 1 ou 2
 							if (preg_match('/^[1-2]/', $code)) {
+								$skipped_year_1_2++;
+								if (function_exists('ssr_log')) ssr_log("fetch_retards($date): UID $uid ($fn $ln) - Skipped (year 1-2, class $code)", 'info', 'api');
 								continue 2; // saute complètement cet élève
 							}
 							$cls = $code;
@@ -283,7 +329,11 @@ if (!function_exists('ssr_fetch_retards_by_date')) {
 					}
 				}
 
-				if (!$cls) continue; // pas de classe officielle valide
+				if (!$cls) {
+					$skipped_no_class++;
+					if (function_exists('ssr_log')) ssr_log("fetch_retards($date): UID $uid ($fn $ln) - Skipped (no official class)", 'warning', 'api');
+					continue;
+				}
 
 				// Simplification du statut
 				$statusText = [];
@@ -292,7 +342,8 @@ if (!function_exists('ssr_fetch_retards_by_date')) {
 				$statusText = $statusText ? implode("+", $statusText) : "—";
 
 				$list[] = [
-					'userIdentifier' => $uid,
+					'userIdentifier' => $userIdent,
+					'internalNumber' => $uid,
 					'class_code'     => $cls,
 					'last_name'      => $ln,
 					'first_name'     => $fn,
@@ -301,6 +352,13 @@ if (!function_exists('ssr_fetch_retards_by_date')) {
 				];
 			}
 		}
+
+		// Log de synthèse
+		$returned = count($list);
+		if (function_exists('ssr_log')) {
+			ssr_log("fetch_retards($date): Total=$total_retards | Returned=$returned | Skipped: no_user=$skipped_no_user, year_1-2=$skipped_year_1_2, no_class=$skipped_no_class", 'info', 'api');
+		}
+
 		return $list;
 	}
 }

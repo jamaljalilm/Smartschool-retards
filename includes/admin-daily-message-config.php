@@ -36,9 +36,9 @@ function ssr_admin_daily_message_config_render(){
         update_option('ssr_daily_send_to_parents', $send_to_parents);
         update_option('ssr_daily_hhmm', $send_time);
 
-        // Replanifier le cron si l'heure a changé
-        if (function_exists('ssr_cron_maybe_reschedule_daily')) {
-            ssr_cron_maybe_reschedule_daily();
+        // Forcer la replanification du cron avec la nouvelle heure
+        if (function_exists('ssr_cron_force_reschedule')) {
+            ssr_cron_force_reschedule();
         }
 
         $saved = true;
@@ -46,12 +46,37 @@ function ssr_admin_daily_message_config_render(){
 
     // Récupération des valeurs actuelles
     $current_title = get_option('ssr_daily_message_title', 'Retard - Interdiction de sortir');
-    $current_body = get_option('ssr_daily_message_body',
-        "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron.\n\nMonsieur Khali"
-    );
+    $default_body = '<div>
+<p style="margin-bottom: 15px;">Bonjour {prenom},</p>
+<p style="margin-bottom: 15px;">Tu as été en retard aujourd\'hui. Tu seras donc <span style="color: #e03e2d;"><strong>privé de sortie</strong></span> la prochaine pause de midi. Merci de venir te présenter à la prochaine pause de midi à <strong>l\'accueil à 13h05</strong>.</p>
+<p style="margin-bottom: 15px;">⚠️ N\'oublie pas de prévoir de quoi manger.</p>
+<p style="margin-bottom: 15px;"><strong>Attention :</strong></p>
+
+<ul style="margin-bottom: 5px;">
+ 	<li>Si tu ne te présentes pas <strong>5 fois</strong>, tu auras une <span style="color: #e03e2d;"><strong>retenue</strong></span>.</li>
+ 	<li>Si tu as été en retard <strong>2 fois le même jour</strong> (matin et après-midi) et que tu ne te présentes pas, cela comptera pour <strong>deux non-présentations</strong>.</li>
+</ul>
+<p style="margin-bottom: 15px;">Cordialement,</p>
+
+</div>
+<div style="font-family: Arial, sans-serif; font-size: 14px; color: #000;">
+<table style="border-collapse: collapse;" cellspacing="0" cellpadding="0">
+<tbody>
+<tr>
+<td style="padding-right: 15px; vertical-align: top;">
+<p style="margin: 0px; font-weight: bold; font-size: 16px; text-align: right;">Robot IA - INDL Retards</p>
+<p style="margin: 2px 0px; font-style: italic; color: #333333; text-align: right;">Rue Edmond Tollenaere, 32
+1020 Bruxelles</p>
+</td>
+<td style="vertical-align: top;"><a href="https://indl.be/" target="_blank" rel="noopener"> <img style="float: left;" src="https://indl.be/wp-content/uploads/2023/04/185-low.gif" alt="Logo Institut Notre-Dame de Lourdes" width="180" height="50" border="0" /> </a></td>
+</tr>
+</tbody>
+</table>
+</div>';
+    $current_body = get_option('ssr_daily_message_body', $default_body);
     $send_to_student = get_option('ssr_daily_send_to_student', '1');
     $send_to_parents = get_option('ssr_daily_send_to_parents', '1');
-    $send_time = get_option('ssr_daily_hhmm', '13:15');
+    $send_time = get_option('ssr_daily_hhmm', '16:00');
 
     ?>
     <style>

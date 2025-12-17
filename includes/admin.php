@@ -53,6 +53,16 @@ add_action('admin_menu', function(){
         'ssr-message-history',
         'ssr_admin_message_history_render'
     );
+
+    // Sous-menu : Logs
+    add_submenu_page(
+        'ssr-settings',
+        __('Logs','smartschool-retards'),
+        __('📋 Logs','smartschool-retards'),
+        'manage_options',
+        'ssr-view-logs',
+        'ssr_admin_view_logs_render'
+    );
 });
 
 /* ========================== PAGE ADMIN (réglages) ========================== */

@@ -87,12 +87,12 @@ function ssr_cron_run_daily($manual=false){
         return;
     }
 
-    // ---- Exemple concret: envoyer un rappel aux élèves en retard aujourd’hui ----
+    // ---- Exemple concret: envoyer un rappel aux élèves en retard aujourd'hui ----
     // Tu peux adapter la logique (filtrer AM/PM, limiter par classe, etc.)
     $date = (new DateTime('now', wp_timezone()))->format('Y-m-d');
 
-    if (!function_exists('ssr_api_fetch_retards_by_date')) {
-        if (function_exists('ssr_log')) ssr_log('ssr_api_fetch_retards_by_date manquante', 'error', 'cron');
+    if (!function_exists('ssr_fetch_retards_by_date')) {
+        if (function_exists('ssr_log')) ssr_log('ssr_fetch_retards_by_date manquante', 'error', 'cron');
         return;
     }
 
@@ -107,9 +107,34 @@ function ssr_cron_run_daily($manual=false){
     $titleTpl = get_option('ssr_daily_message_title', 'Retard - Interdiction de sortir');
     $titleTpl = apply_filters('ssr_cron_message_title_tpl', $titleTpl);
 
-    $bodyTpl = get_option('ssr_daily_message_body',
-        "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron.\n\nMonsieur Khali"
-    );
+    $default_body = '<div>
+<p style="margin-bottom: 15px;">Bonjour {prenom},</p>
+<p style="margin-bottom: 15px;">Tu as été en retard aujourd\'hui. Tu seras donc <span style="color: #e03e2d;"><strong>privé de sortie</strong></span> la prochaine pause de midi. Merci de venir te présenter à la prochaine pause de midi à <strong>l\'accueil à 13h05</strong>.</p>
+<p style="margin-bottom: 15px;">⚠️ N\'oublie pas de prévoir de quoi manger.</p>
+<p style="margin-bottom: 15px;"><strong>Attention :</strong></p>
+
+<ul style="margin-bottom: 5px;">
+ 	<li>Si tu ne te présentes pas <strong>5 fois</strong>, tu auras une <span style="color: #e03e2d;"><strong>retenue</strong></span>.</li>
+ 	<li>Si tu as été en retard <strong>2 fois le même jour</strong> (matin et après-midi) et que tu ne te présentes pas, cela comptera pour <strong>deux non-présentations</strong>.</li>
+</ul>
+<p style="margin-bottom: 15px;">Cordialement,</p>
+
+</div>
+<div style="font-family: Arial, sans-serif; font-size: 14px; color: #000;">
+<table style="border-collapse: collapse;" cellspacing="0" cellpadding="0">
+<tbody>
+<tr>
+<td style="padding-right: 15px; vertical-align: top;">
+<p style="margin: 0px; font-weight: bold; font-size: 16px; text-align: right;">Robot IA - INDL Retards</p>
+<p style="margin: 2px 0px; font-style: italic; color: #333333; text-align: right;">Rue Edmond Tollenaere, 32
+1020 Bruxelles</p>
+</td>
+<td style="vertical-align: top;"><a href="https://indl.be/" target="_blank" rel="noopener"> <img style="float: left;" src="https://indl.be/wp-content/uploads/2023/04/185-low.gif" alt="Logo Institut Notre-Dame de Lourdes" width="180" height="50" border="0" /> </a></td>
+</tr>
+</tbody>
+</table>
+</div>';
+    $bodyTpl = get_option('ssr_daily_message_body', $default_body);
     $bodyTpl = apply_filters('ssr_cron_message_body_tpl', $bodyTpl);
 
 
@@ -144,15 +169,59 @@ function ssr_cron_run_daily($manual=false){
         $body = str_replace('{classe}', $classe, $body);
 
         if (function_exists('ssr_api_send_message')) {
+            global $wpdb;
+            $table_name = $wpdb->prefix . 'smartschool_daily_messages';
 
             // 1) Élève : compte principal (coaccount = null)
             if ($send_to_student === '1') {
                 $res = ssr_api_send_message($uid, $title, $body, $sender, null, null, true);
                 if (is_wp_error($res)) {
                     if (function_exists('ssr_log')) ssr_log('Send FAIL (élève) uid='.$uid.' error='.$res->get_error_message(), 'error', 'cron');
+
+                    // Enregistrer l'échec dans l'historique
+                    $wpdb->insert(
+                        $table_name,
+                        [
+                            'user_identifier' => $uid,
+                            'class_code' => $classe,
+                            'last_name' => $nom,
+                            'first_name' => $prenom,
+                            'date_retard' => $date,
+                            'message_title' => $title,
+                            'message_content' => $body,
+                            'sent_to_student' => 1,
+                            'sent_to_parent1' => 0,
+                            'sent_to_parent2' => 0,
+                            'sent_at' => current_time('mysql'),
+                            'status' => 'failed',
+                            'error_message' => $res->get_error_message(),
+                        ],
+                        ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
+                    );
                 } else {
                     if (function_exists('ssr_log')) ssr_log('Send OK (élève) uid='.$uid, 'info', 'cron');
                     $sent++;
+
+                    // Enregistrer le succès dans l'historique
+                    $wpdb->insert(
+                        $table_name,
+                        [
+                            'user_identifier' => $uid,
+                            'class_code' => $classe,
+                            'last_name' => $nom,
+                            'first_name' => $prenom,
+                            'date_retard' => $date,
+                            'message_title' => $title,
+                            'message_content' => $body,
+                            'sent_to_student' => 1,
+                            'sent_to_parent1' => 0,
+                            'sent_to_parent2' => 0,
+                            'sent_at' => current_time('mysql'),
+                            'status' => 'success',
+                            'error_message' => null,
+                        ],
+                        ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
+                    );
                 }
             }
 
@@ -168,9 +237,51 @@ function ssr_cron_run_daily($manual=false){
                     $res_parent = ssr_api_send_message($uid, $title, $body, $sender, null, $co, true);
                     if (is_wp_error($res_parent)) {
                         if (function_exists('ssr_log')) ssr_log('Send FAIL (parent coaccount='.$co.') uid='.$uid.' error='.$res_parent->get_error_message(), 'error', 'cron');
+
+                        // Enregistrer l'échec dans l'historique
+                        $wpdb->insert(
+                            $table_name,
+                            [
+                                'user_identifier' => $uid,
+                                'class_code' => $classe,
+                                'last_name' => $nom,
+                                'first_name' => $prenom,
+                                'date_retard' => $date,
+                                'message_title' => $title,
+                                'message_content' => $body,
+                                'sent_to_student' => 0,
+                                'sent_to_parent1' => ($co === 1) ? 1 : 0,
+                                'sent_to_parent2' => ($co === 2) ? 1 : 0,
+                                'sent_at' => current_time('mysql'),
+                                'status' => 'failed',
+                                'error_message' => $res_parent->get_error_message(),
+                            ],
+                            ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
+                        );
                     } else {
                         if (function_exists('ssr_log')) ssr_log('Send OK (parent coaccount='.$co.') uid='.$uid, 'info', 'cron');
                         $sent++;
+
+                        // Enregistrer le succès dans l'historique
+                        $wpdb->insert(
+                            $table_name,
+                            [
+                                'user_identifier' => $uid,
+                                'class_code' => $classe,
+                                'last_name' => $nom,
+                                'first_name' => $prenom,
+                                'date_retard' => $date,
+                                'message_title' => $title,
+                                'message_content' => $body,
+                                'sent_to_student' => 0,
+                                'sent_to_parent1' => ($co === 1) ? 1 : 0,
+                                'sent_to_parent2' => ($co === 2) ? 1 : 0,
+                                'sent_at' => current_time('mysql'),
+                                'status' => 'success',
+                                'error_message' => null,
+                            ],
+                            ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
+                        );
                     }
                 }
             }

@@ -39,12 +39,51 @@ function ssr_admin_test_messages_render(){
             $result_msg = 'Erreur : le corps du message est requis.';
             $result_type = 'error';
         } else {
+            // Récupérer les détails de l'utilisateur pour remplacer les variables
+            $user_details = null;
+            $first_name = '';
+            $last_name = '';
+            $class_code = '';
+
+            if (function_exists('ssr_api')) {
+                // Essayer de récupérer les détails via l'API
+                $user_details = ssr_api('getUserDetails', [$user_id]);
+
+                if (is_array($user_details) && !empty($user_details)) {
+                    $first_name = isset($user_details['voornaam']) ? $user_details['voornaam'] : '';
+                    $last_name = isset($user_details['naam']) ? $user_details['naam'] : '';
+
+                    // Récupérer la classe officielle
+                    if (!empty($user_details['groups']) && is_array($user_details['groups'])) {
+                        foreach ($user_details['groups'] as $g) {
+                            if (!empty($g['isKlas']) && !empty($g['isOfficial'])) {
+                                $class_code = isset($g['code']) ? $g['code'] : (isset($g['name']) ? $g['name'] : '');
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Remplacement des variables dans le titre et le corps
+            $title_final = str_replace(
+                ['{prenom}', '{nom}', '{classe}'],
+                [$first_name, $last_name, $class_code],
+                $title
+            );
+
+            $body_final = str_replace(
+                ['{prenom}', '{nom}', '{classe}'],
+                [$first_name, $last_name, $class_code],
+                $body
+            );
+
             // Envoi du message
             if (function_exists('ssr_api_send_message')) {
                 $result = ssr_api_send_message(
                     $user_id,
-                    $title,
-                    $body,
+                    $title_final,
+                    $body_final,
                     $sender,
                     null,        // attachments
                     $coaccount,  // coaccount
@@ -55,18 +94,28 @@ function ssr_admin_test_messages_render(){
                     $result_msg = 'Erreur lors de l\'envoi : ' . esc_html($result->get_error_message());
                     $result_type = 'error';
 
-                    // Enregistrer l'échec dans l'historique
+                    // Vérifier et créer la table si nécessaire
                     global $wpdb;
-                    $wpdb->insert(
-                        $wpdb->prefix . 'smartschool_daily_messages',
+                    $table_name = $wpdb->prefix . 'smartschool_daily_messages';
+
+                    // Créer la table si elle n'existe pas
+                    if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+                        if (function_exists('ssr_db_maybe_create_tables')) {
+                            ssr_db_maybe_create_tables();
+                        }
+                    }
+
+                    // Enregistrer l'échec dans l'historique
+                    $insert_result = $wpdb->insert(
+                        $table_name,
                         [
                             'user_identifier' => $user_id,
-                            'class_code' => null,
-                            'last_name' => null,
-                            'first_name' => null,
+                            'class_code' => $class_code,
+                            'last_name' => $last_name,
+                            'first_name' => $first_name,
                             'date_retard' => current_time('Y-m-d'),
-                            'message_title' => $title,
-                            'message_content' => $body,
+                            'message_title' => $title_final,
+                            'message_content' => $body_final,
                             'sent_to_student' => ($coaccount === null) ? 1 : 0,
                             'sent_to_parent1' => ($coaccount === 1) ? 1 : 0,
                             'sent_to_parent2' => ($coaccount === 2) ? 1 : 0,
@@ -76,9 +125,26 @@ function ssr_admin_test_messages_render(){
                         ],
                         ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
                     );
+
+                    // Debug: afficher si l'insertion a échoué
+                    if ($insert_result === false) {
+                        $result_msg .= '<br><small style="color: #d63638;">⚠️ Erreur lors de l\'enregistrement dans l\'historique: ' . esc_html($wpdb->last_error) . '</small>';
+                    }
                 } else {
                     $coaccount_label = ($coaccount === null) ? 'compte principal' : 'coaccount ' . $coaccount;
                     $result_msg = 'Message envoyé avec succès à l\'utilisateur ' . esc_html($user_id) . ' (' . $coaccount_label . ')';
+
+                    // Afficher les variables remplacées si disponibles
+                    if ($first_name || $last_name || $class_code) {
+                        $result_msg .= '<br><small>Variables remplacées : ';
+                        $vars_replaced = [];
+                        if ($first_name) $vars_replaced[] = '{prenom} → ' . esc_html($first_name);
+                        if ($last_name) $vars_replaced[] = '{nom} → ' . esc_html($last_name);
+                        if ($class_code) $vars_replaced[] = '{classe} → ' . esc_html($class_code);
+                        $result_msg .= implode(' | ', $vars_replaced);
+                        $result_msg .= '</small>';
+                    }
+
                     $result_type = 'success';
 
                     // Log
@@ -86,18 +152,28 @@ function ssr_admin_test_messages_render(){
                         ssr_log('Test message sent to ' . $user_id . ' (' . $coaccount_label . ')', 'info', 'admin-test');
                     }
 
-                    // Enregistrer dans l'historique
+                    // Vérifier et créer la table si nécessaire
                     global $wpdb;
-                    $wpdb->insert(
-                        $wpdb->prefix . 'smartschool_daily_messages',
+                    $table_name = $wpdb->prefix . 'smartschool_daily_messages';
+
+                    // Créer la table si elle n'existe pas
+                    if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+                        if (function_exists('ssr_db_maybe_create_tables')) {
+                            ssr_db_maybe_create_tables();
+                        }
+                    }
+
+                    // Enregistrer dans l'historique
+                    $insert_result = $wpdb->insert(
+                        $table_name,
                         [
                             'user_identifier' => $user_id,
-                            'class_code' => null,
-                            'last_name' => null,
-                            'first_name' => null,
+                            'class_code' => $class_code,
+                            'last_name' => $last_name,
+                            'first_name' => $first_name,
                             'date_retard' => current_time('Y-m-d'),
-                            'message_title' => $title,
-                            'message_content' => $body,
+                            'message_title' => $title_final,
+                            'message_content' => $body_final,
                             'sent_to_student' => ($coaccount === null) ? 1 : 0,
                             'sent_to_parent1' => ($coaccount === 1) ? 1 : 0,
                             'sent_to_parent2' => ($coaccount === 2) ? 1 : 0,
@@ -107,6 +183,11 @@ function ssr_admin_test_messages_render(){
                         ],
                         ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s']
                     );
+
+                    // Debug: afficher si l'insertion a échoué
+                    if ($insert_result === false) {
+                        $result_msg .= '<br><small style="color: #d63638;">⚠️ Le message a été envoyé mais n\'a pas pu être enregistré dans l\'historique. Erreur DB: ' . esc_html($wpdb->last_error) . '</small>';
+                    }
                 }
             } else {
                 $result_msg = 'Erreur : la fonction ssr_api_send_message n\'est pas disponible.';
@@ -134,6 +215,15 @@ function ssr_admin_test_messages_render(){
                 Utilisez cet outil pour tester l'envoi de messages via l'API Smartschool sendMsg.
                 <br><strong>Attention :</strong> Les messages seront réellement envoyés !
             </p>
+            <div style="background: #e7f3ff; border-left: 4px solid #0073aa; padding: 12px; margin: 15px 0;">
+                <strong>💡 Variables disponibles :</strong>
+                <ul style="margin: 8px 0 0 0; line-height: 1.6;">
+                    <li><code>{prenom}</code> - Prénom de l'élève</li>
+                    <li><code>{nom}</code> - Nom de famille de l'élève</li>
+                    <li><code>{classe}</code> - Classe officielle de l'élève</li>
+                </ul>
+                <small style="color: #666;">Les variables seront automatiquement remplacées par les données réelles de l'élève.</small>
+            </div>
 
             <form method="post" action="">
                 <?php wp_nonce_field('ssr_test_send_message', 'ssr_test_nonce'); ?>
@@ -176,7 +266,33 @@ function ssr_admin_test_messages_render(){
                         </th>
                         <td>
                             <?php
-                            $default_message = "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron.\n\nMonsieur Khali";
+                            $default_message = '<div>
+<p style="margin-bottom: 15px;">Bonjour {prenom},</p>
+<p style="margin-bottom: 15px;">Tu as été en retard aujourd\'hui. Tu seras donc <span style="color: #e03e2d;"><strong>privé de sortie</strong></span> la prochaine pause de midi. Merci de venir te présenter à la prochaine pause de midi à <strong>l\'accueil à 13h05</strong>.</p>
+<p style="margin-bottom: 15px;">⚠️ N\'oublie pas de prévoir de quoi manger.</p>
+<p style="margin-bottom: 15px;"><strong>Attention :</strong></p>
+
+<ul style="margin-bottom: 5px;">
+ 	<li>Si tu ne te présentes pas <strong>5 fois</strong>, tu auras une <span style="color: #e03e2d;"><strong>retenue</strong></span>.</li>
+ 	<li>Si tu as été en retard <strong>2 fois le même jour</strong> (matin et après-midi) et que tu ne te présentes pas, cela comptera pour <strong>deux non-présentations</strong>.</li>
+</ul>
+<p style="margin-bottom: 15px;">Cordialement,</p>
+
+</div>
+<div style="font-family: Arial, sans-serif; font-size: 14px; color: #000;">
+<table style="border-collapse: collapse;" cellspacing="0" cellpadding="0">
+<tbody>
+<tr>
+<td style="padding-right: 15px; vertical-align: top;">
+<p style="margin: 0px; font-weight: bold; font-size: 16px; text-align: right;">Robot IA - INDL Retards</p>
+<p style="margin: 2px 0px; font-style: italic; color: #333333; text-align: right;">Rue Edmond Tollenaere, 32
+1020 Bruxelles</p>
+</td>
+<td style="vertical-align: top;"><a href="https://indl.be/" target="_blank" rel="noopener"> <img style="float: left;" src="https://indl.be/wp-content/uploads/2023/04/185-low.gif" alt="Logo Institut Notre-Dame de Lourdes" width="180" height="50" border="0" /> </a></td>
+</tr>
+</tbody>
+</table>
+</div>';
                             $message_content = isset($_POST['message_body']) ? wp_kses_post($_POST['message_body']) : $default_message;
 
                             wp_editor(
@@ -195,7 +311,10 @@ function ssr_admin_test_messages_render(){
                                 )
                             );
                             ?>
-                            <p class="description">Utilisez l'éditeur pour formater votre message (gras, couleurs, listes, etc.)</p>
+                            <p class="description">
+                                Utilisez l'éditeur pour formater votre message (gras, couleurs, listes, etc.)<br>
+                                <strong>Variables disponibles :</strong> <code>{prenom}</code>, <code>{nom}</code>, <code>{classe}</code>
+                            </p>
                         </td>
                     </tr>
 
