@@ -153,9 +153,9 @@ function ssr_cron_run_daily($manual=false){
         if (!$uid) continue;
 
         // Récupération des informations de l'élève
-        $prenom = isset($r['firstName']) ? $r['firstName'] : '';
-        $nom = isset($r['lastName']) ? $r['lastName'] : '';
-        $classe = isset($r['classCode']) ? $r['classCode'] : '';
+        $prenom = isset($r['first_name']) ? $r['first_name'] : '';
+        $nom = isset($r['last_name']) ? $r['last_name'] : '';
+        $classe = isset($r['class_code']) ? $r['class_code'] : '';
 
         // Remplacement des variables dans le titre et le corps
         $title = $titleTpl;
