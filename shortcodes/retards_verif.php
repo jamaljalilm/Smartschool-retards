@@ -90,26 +90,12 @@ add_shortcode('retards_verif',function(){
 		// === Construction de $dates selon la règle métier
 		$dow = (int)(new DateTimeImmutable($date, $tz))->format('N'); // 1=lundi ... 7=dimanche
 
-		// === Logique de sélection des dates ===
-		// Si l'utilisateur a sélectionné manuellement une date DIFFÉRENTE d'aujourd'hui,
-		// on affiche cette date spécifique. Sinon, on utilise la logique métier.
-		if (!empty($req) && $date !== $today) {
-		  // Sélection manuelle d'une date passée/future
-		  if (in_array($dow, [3,6,7], true)) {
-			// Mercredi / Samedi / Dimanche => aucun élève
-			$dates = [];
-		  } else {
-			$dates = [ $date ];
-		  }
-		} else {
-		  // Vue par défaut (pas de ?date= OU ?date=[aujourd'hui])
-		  // → Utiliser la logique métier pour afficher les retards à vérifier
-		  if (function_exists('ssr_prev_days_for_check')) {
+		// === TOUJOURS utiliser la logique métier ===
+		if (function_exists('ssr_prev_days_for_check')) {
 			$dates = ssr_prev_days_for_check();
-		  } else {
+		} else {
 			// Filet de sécurité si la fonction n'existe pas
 			$dates = in_array($dow, [3,6,7], true) ? [] : [ $date ];
-		  }
 		}
 
 
