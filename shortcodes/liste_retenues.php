@@ -45,7 +45,7 @@ add_shortcode('liste_retenues', function() {
 		  AND date_retard <= %s
 		GROUP BY user_identifier
 		HAVING nb_absences >= 5
-		ORDER BY MAX(last_name) ASC, MAX(first_name) ASC, nb_absences DESC
+		ORDER BY MAX(class_code) ASC, MAX(last_name) ASC, MAX(first_name) ASC
 	", $today);
 
 	$students = $wpdb->get_results($query, ARRAY_A);
@@ -250,7 +250,7 @@ add_shortcode('liste_retenues', function() {
 		border-color: #e0e3e7;
 	}
 
-	/* Statistiques - Affichage 2-2 FORCÉ */
+	/* Statistiques - Affichage 2-2 FORCÉ + Boutons cliquables */
 	.ssr-retenues-stats {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
@@ -265,6 +265,23 @@ add_shortcode('liste_retenues', function() {
 		border: 1px solid #e6eaef;
 		border-radius: 8px;
 		text-align: center;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		font-family: inherit;
+		width: 100%;
+	}
+
+	.ssr-stat-card:hover {
+		background: #e5e7eb;
+		border-color: #d1d5db;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+	}
+
+	.ssr-stat-card.active {
+		background: #fff7ed;
+		border: 2px solid #f57c00;
+		box-shadow: 0 0 0 3px rgba(245,124,0,0.1);
 	}
 
 	.ssr-stat-number {
@@ -279,6 +296,28 @@ add_shortcode('liste_retenues', function() {
 		margin-top: 4px;
 	}
 
+	/* Champ date de sanction */
+	.ssr-date-sanction {
+		padding: 6px 8px;
+		border: 1px solid #d1d5db;
+		border-radius: 6px;
+		background: #fff;
+		font-size: 14px;
+		width: 150px;
+		transition: border-color 0.2s;
+	}
+
+	.ssr-date-sanction:focus {
+		border-color: #f57c00;
+		outline: none;
+		box-shadow: 0 0 0 2px rgba(245,124,0,0.1);
+	}
+
+	/* Lignes cachées par le filtre */
+	.ssr-student-row.hidden {
+		display: none;
+	}
+
 	/* Mobile */
 	@media (max-width: 640px) {
 		.ssr-retenues-table th,
@@ -286,8 +325,42 @@ add_shortcode('liste_retenues', function() {
 			font-size: 12px;
 			padding: 8px 4px;
 		}
+
+		.ssr-date-sanction {
+			width: 120px;
+			font-size: 12px;
+		}
 	}
 </style>
+
+<script>
+// Filtrage par catégorie de sanction
+(function() {
+	const filterBtns = document.querySelectorAll('.ssr-filter-btn');
+	const rows = document.querySelectorAll('.ssr-student-row');
+
+	filterBtns.forEach(btn => {
+		btn.addEventListener('click', function() {
+			const filter = this.getAttribute('data-filter');
+
+			// Retire la classe active de tous les boutons
+			filterBtns.forEach(b => b.classList.remove('active'));
+			// Ajoute la classe active au bouton cliqué
+			this.classList.add('active');
+
+			// Filtre les lignes
+			rows.forEach(row => {
+				const category = row.getAttribute('data-category');
+				if (filter === 'all' || category === filter) {
+					row.classList.remove('hidden');
+				} else {
+					row.classList.add('hidden');
+				}
+			});
+		});
+	});
+})();
+</script>
 
 	<h2 class="ssr-retenues-title">Liste des retenues et renvois</h2>
 
@@ -324,25 +397,29 @@ add_shortcode('liste_retenues', function() {
 		</tr>
 	</table>
 
-	<!-- Statistiques -->
-	<h3 style="text-align:left;margin-top:15px;margin-bottom:10px;font-weight:bold;">Répartition par sanction</h3>
+	<!-- Statistiques - BOUTONS FILTRES -->
+	<h3 style="text-align:left;margin-top:15px;margin-bottom:10px;font-weight:bold;">Filtrer par sanction</h3>
 	<div class="ssr-retenues-stats">
-		<div class="ssr-stat-card">
+		<button type="button" class="ssr-stat-card ssr-filter-btn active" data-filter="all">
+			<div class="ssr-stat-number"><?php echo $total_students; ?></div>
+			<div class="ssr-stat-label">Tous les élèves</div>
+		</button>
+		<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="5-9">
 			<div class="ssr-stat-number"><?php echo $count_5; ?></div>
 			<div class="ssr-stat-label">Retenue 1<br>(5-9 absences)</div>
-		</div>
-		<div class="ssr-stat-card">
+		</button>
+		<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="10-14">
 			<div class="ssr-stat-number"><?php echo $count_10; ?></div>
 			<div class="ssr-stat-label">Retenue 2<br>(10-14 absences)</div>
-		</div>
-		<div class="ssr-stat-card">
+		</button>
+		<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="15-19">
 			<div class="ssr-stat-number"><?php echo $count_15; ?></div>
 			<div class="ssr-stat-label">Demi-jour de renvoi<br>(15-19 absences)</div>
-		</div>
-		<div class="ssr-stat-card">
+		</button>
+		<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="20+">
 			<div class="ssr-stat-number"><?php echo $count_20; ?></div>
 			<div class="ssr-stat-label">Jour de renvoi<br>(20+ absences)</div>
-		</div>
+		</button>
 	</div>
 
 	<!-- 🔍 PANNEAU DE DEBUG (à supprimer après test) -->
@@ -419,28 +496,33 @@ add_shortcode('liste_retenues', function() {
 				<th>Prénom</th>
 				<th>Nb absences</th>
 				<th>Sanction</th>
+				<th>Date de sanction</th>
 			</tr>
 		</thead>
 		<tbody>
 			<?php foreach ($students as $student):
 				$nb = (int)$student['nb_absences'];
 
-				// Déterminer la sanction
+				// Déterminer la sanction et la catégorie pour le filtrage
 				if ($nb >= 20) {
 					$sanction_label = 'Jour de renvoi';
 					$sanction_class = 'ssr-badge-renvoi';
+					$filter_category = '20+';
 				} elseif ($nb >= 15) {
 					$sanction_label = 'Demi-jour de renvoi';
 					$sanction_class = 'ssr-badge-renvoi-demi';
+					$filter_category = '15-19';
 				} elseif ($nb >= 10) {
 					$sanction_label = 'Retenue 2';
 					$sanction_class = 'ssr-badge-retenue';
+					$filter_category = '10-14';
 				} else {
 					$sanction_label = 'Retenue 1';
 					$sanction_class = 'ssr-badge-retenue';
+					$filter_category = '5-9';
 				}
 			?>
-			<tr>
+			<tr class="ssr-student-row" data-category="<?php echo esc_attr($filter_category); ?>">
 				<td><?php echo esc_html($student['class_code'] ?? '—'); ?></td>
 				<td><?php echo esc_html($student['lastname'] ?? '—'); ?></td>
 				<td><?php echo esc_html($student['firstname'] ?? '—'); ?></td>
@@ -449,6 +531,9 @@ add_shortcode('liste_retenues', function() {
 					<span class="ssr-badge-sanction <?php echo $sanction_class; ?>">
 						<?php echo esc_html($sanction_label); ?>
 					</span>
+				</td>
+				<td>
+					<input type="date" class="ssr-date-sanction" min="<?php echo esc_attr($today); ?>" value="" />
 				</td>
 			</tr>
 			<?php endforeach; ?>
