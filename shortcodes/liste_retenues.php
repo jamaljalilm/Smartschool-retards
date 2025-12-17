@@ -32,7 +32,7 @@ add_shortcode('liste_retenues', function() {
 			COUNT(*) as nb_absences
 		FROM {$ver}
 		WHERE status = 'absent'
-		  AND date_jour <= %s
+		  AND date_retard <= %s
 		GROUP BY user_identifier
 		HAVING nb_absences >= 5
 		ORDER BY nb_absences DESC, lastname ASC, firstname ASC
@@ -48,9 +48,9 @@ add_shortcode('liste_retenues', function() {
 			MAX(lastname) as lastname,
 			MAX(class_code) as class_code,
 			COUNT(*) as nb_absences,
-			GROUP_CONCAT(CONCAT(date_jour, ':', status) ORDER BY date_jour SEPARATOR ' | ') as details
+			GROUP_CONCAT(CONCAT(date_retard, ':', status) ORDER BY date_retard SEPARATOR ' | ') as details
 		FROM {$ver}
-		WHERE date_jour <= %s
+		WHERE date_retard <= %s
 		GROUP BY user_identifier
 		ORDER BY nb_absences DESC, lastname ASC, firstname ASC
 	", $today);
@@ -240,19 +240,16 @@ add_shortcode('liste_retenues', function() {
 		border-color: #e0e3e7;
 	}
 
-	/* Statistiques - Affichage 2-2 */
+	/* Statistiques - Affichage 2-2 FORCÉ */
 	.ssr-retenues-stats {
-		display: flex;
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
 		gap: 10px;
-		flex-wrap: wrap;
-		margin: 15px 0;
+		margin: 15px auto;
 		max-width: 1200px;
-		margin-left: auto;
-		margin-right: auto;
 	}
 
 	.ssr-stat-card {
-		flex: 0 0 calc(50% - 5px);
 		padding: 12px;
 		background: #f9fafb;
 		border: 1px solid #e6eaef;
@@ -278,10 +275,6 @@ add_shortcode('liste_retenues', function() {
 		.ssr-retenues-table td {
 			font-size: 12px;
 			padding: 8px 4px;
-		}
-
-		.ssr-stat-card {
-			flex-basis: calc(50% - 5px);
 		}
 	}
 </style>
