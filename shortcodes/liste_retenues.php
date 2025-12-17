@@ -18,17 +18,11 @@ add_shortcode('liste_retenues', function() {
 	$tz = wp_timezone();
 	$today = (new DateTime('now', $tz))->format('Y-m-d');
 
-	// Date de fin pour le comptage (par défaut aujourd'hui)
-	$end_date = isset($_GET['end_date']) ? sanitize_text_field($_GET['end_date']) : $today;
-	if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date)) {
-		$end_date = $today;
-	}
-
 	// Récupère le vérificateur actuel
 	$verifier = function_exists('ssr_current_verifier') ? ssr_current_verifier() : null;
 	$verifier_name = $verifier['name'] ?? '';
 
-	// Compte les absences par élève jusqu'à la date de fin
+	// Compte les absences par élève jusqu'à aujourd'hui
 	$query = $wpdb->prepare("
 		SELECT
 			user_identifier,
@@ -42,9 +36,25 @@ add_shortcode('liste_retenues', function() {
 		GROUP BY user_identifier
 		HAVING nb_absences >= 5
 		ORDER BY nb_absences DESC, lastname ASC, firstname ASC
-	", $end_date);
+	", $today);
 
 	$students = $wpdb->get_results($query, ARRAY_A);
+
+	// 🔍 DEBUG - Vérifier tous les élèves (même ceux avec moins de 5 absences)
+	$debug_query = $wpdb->prepare("
+		SELECT
+			user_identifier,
+			MAX(firstname) as firstname,
+			MAX(lastname) as lastname,
+			MAX(class_code) as class_code,
+			COUNT(*) as nb_absences,
+			GROUP_CONCAT(CONCAT(date_jour, ':', status) ORDER BY date_jour SEPARATOR ' | ') as details
+		FROM {$ver}
+		WHERE date_jour <= %s
+		GROUP BY user_identifier
+		ORDER BY nb_absences DESC, lastname ASC, firstname ASC
+	", $today);
+	$all_students = $wpdb->get_results($debug_query, ARRAY_A);
 
 	// Calcul des statistiques
 	$total_students = count($students);
@@ -230,17 +240,19 @@ add_shortcode('liste_retenues', function() {
 		border-color: #e0e3e7;
 	}
 
-	/* Statistiques */
+	/* Statistiques - Affichage 2-2 */
 	.ssr-retenues-stats {
 		display: flex;
 		gap: 10px;
 		flex-wrap: wrap;
 		margin: 15px 0;
+		max-width: 1200px;
+		margin-left: auto;
+		margin-right: auto;
 	}
 
 	.ssr-stat-card {
-		flex: 1 1 0;
-		min-width: 150px;
+		flex: 0 0 calc(50% - 5px);
 		padding: 12px;
 		background: #f9fafb;
 		border: 1px solid #e6eaef;
@@ -280,12 +292,13 @@ add_shortcode('liste_retenues', function() {
 	<h3 style="text-align:left;margin-top:5px;margin-bottom:5px;font-weight:bold;">Informations utiles</h3>
 	<table id="ssr-retenues-info">
 		<tr>
-			<th>Date de fin</th>
+			<th>Date du jour</th>
 			<td>
-				<form method="get" style="margin:0;display:flex;gap:6px;align-items:center;">
-					<input type="date" name="end_date" value="<?php echo esc_attr($end_date); ?>">
-					<button type="submit" class="ssr-small-btn">Changer</button>
-				</form>
+				<div class="ssr-badges">
+					<span class="ssr-pill ssr-pill--neutral">
+						<?php echo esc_html(date_i18n('d/m/Y', strtotime($today))); ?>
+					</span>
+				</div>
 			</td>
 		</tr>
 		<tr>
@@ -313,26 +326,82 @@ add_shortcode('liste_retenues', function() {
 	<div class="ssr-retenues-stats">
 		<div class="ssr-stat-card">
 			<div class="ssr-stat-number"><?php echo $count_5; ?></div>
-			<div class="ssr-stat-label">5-9 absences<br>(Retenue)</div>
+			<div class="ssr-stat-label">Retenue 1<br>(5-9 absences)</div>
 		</div>
 		<div class="ssr-stat-card">
 			<div class="ssr-stat-number"><?php echo $count_10; ?></div>
-			<div class="ssr-stat-label">10-14 absences<br>(Retenue)</div>
+			<div class="ssr-stat-label">Retenue 2<br>(10-14 absences)</div>
 		</div>
 		<div class="ssr-stat-card">
 			<div class="ssr-stat-number"><?php echo $count_15; ?></div>
-			<div class="ssr-stat-label">15-19 absences<br>(Demi-jour renvoi)</div>
+			<div class="ssr-stat-label">Demi-jour de renvoi<br>(15-19 absences)</div>
 		</div>
 		<div class="ssr-stat-card">
 			<div class="ssr-stat-number"><?php echo $count_20; ?></div>
-			<div class="ssr-stat-label">20+ absences<br>(Jour de renvoi)</div>
+			<div class="ssr-stat-label">Jour de renvoi<br>(20+ absences)</div>
 		</div>
 	</div>
+
+	<!-- 🔍 PANNEAU DE DEBUG (à supprimer après test) -->
+	<details style="margin:20px 0;padding:15px;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;">
+		<summary style="cursor:pointer;font-weight:bold;color:#856404;">🔍 Debug : Voir tous les élèves (cliquer pour afficher)</summary>
+		<div style="margin-top:15px;font-family:monospace;font-size:12px;max-height:400px;overflow-y:auto;">
+			<p style="margin:0 0 10px 0;color:#856404;">
+				<strong>Total d'élèves dans la base :</strong> <?php echo count($all_students); ?><br>
+				<strong>Élèves affichés (≥5 absences) :</strong> <?php echo count($students); ?><br>
+				<strong>Date de référence :</strong> <?php echo esc_html($today); ?>
+			</p>
+			<table style="width:100%;border-collapse:collapse;font-size:11px;">
+				<thead>
+					<tr style="background:#856404;color:#fff;">
+						<th style="padding:5px;border:1px solid #ccc;">Nom</th>
+						<th style="padding:5px;border:1px solid #ccc;">Prénom</th>
+						<th style="padding:5px;border:1px solid #ccc;">Classe</th>
+						<th style="padding:5px;border:1px solid #ccc;">Total</th>
+						<th style="padding:5px;border:1px solid #ccc;">Absents</th>
+						<th style="padding:5px;border:1px solid #ccc;">Présents</th>
+						<th style="padding:5px;border:1px solid #ccc;">Détails</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ($all_students as $s):
+						$details_arr = explode(' | ', $s['details'] ?? '');
+						$count_absent = 0;
+						$count_present = 0;
+						foreach ($details_arr as $d) {
+							if (strpos($d, ':absent') !== false) $count_absent++;
+							elseif (strpos($d, ':present') !== false) $count_present++;
+						}
+						$row_color = ($count_absent >= 5) ? '#e8f5e9' : '#fafafa';
+					?>
+					<tr style="background:<?php echo $row_color; ?>;">
+						<td style="padding:5px;border:1px solid #ccc;"><?php echo esc_html($s['lastname'] ?? '—'); ?></td>
+						<td style="padding:5px;border:1px solid #ccc;"><?php echo esc_html($s['firstname'] ?? '—'); ?></td>
+						<td style="padding:5px;border:1px solid #ccc;"><?php echo esc_html($s['class_code'] ?? '—'); ?></td>
+						<td style="padding:5px;border:1px solid #ccc;font-weight:bold;"><?php echo (int)$s['nb_absences']; ?></td>
+						<td style="padding:5px;border:1px solid #ccc;color:#d32f2f;font-weight:bold;"><?php echo $count_absent; ?></td>
+						<td style="padding:5px;border:1px solid #ccc;color:#2e7d32;"><?php echo $count_present; ?></td>
+						<td style="padding:5px;border:1px solid #ccc;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?php echo esc_attr($s['details'] ?? ''); ?>">
+							<?php echo esc_html($s['details'] ?? '—'); ?>
+						</td>
+					</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+			<p style="margin:15px 0 0 0;color:#856404;font-size:11px;">
+				<strong>Légende :</strong><br>
+				• Fond vert clair = Élève avec ≥5 absences (devrait apparaître dans la liste)<br>
+				• Fond gris = Élève avec &lt;5 absences (ne devrait pas apparaître)<br>
+				• Colonne "Absents" = Nombre de lignes avec status='absent'<br>
+				• Colonne "Présents" = Nombre de lignes avec status='present'
+			</p>
+		</div>
+	</details>
 
 	<?php if (empty($students)): ?>
 		<div style="padding:20px;text-align:center;background:#f9fafb;border:1px solid #e6eaef;border-radius:8px;margin:20px auto;max-width:600px;">
 			<p style="margin:0;color:#666;font-size:15px;">
-				Aucun élève n'a atteint le seuil de 5 absences vérifiées jusqu'au <strong><?php echo esc_html(date_i18n('d/m/Y', strtotime($end_date))); ?></strong>.
+				Aucun élève n'a atteint le seuil de 5 absences vérifiées jusqu'à aujourd'hui.
 			</p>
 		</div>
 	<?php else: ?>
@@ -361,10 +430,10 @@ add_shortcode('liste_retenues', function() {
 					$sanction_label = 'Demi-jour de renvoi';
 					$sanction_class = 'ssr-badge-renvoi-demi';
 				} elseif ($nb >= 10) {
-					$sanction_label = 'Retenue (10+)';
+					$sanction_label = 'Retenue 2';
 					$sanction_class = 'ssr-badge-retenue';
 				} else {
-					$sanction_label = 'Retenue (5+)';
+					$sanction_label = 'Retenue 1';
 					$sanction_class = 'ssr-badge-retenue';
 				}
 			?>
