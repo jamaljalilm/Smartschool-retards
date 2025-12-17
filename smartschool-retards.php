@@ -38,6 +38,7 @@ require_once SSR_SC_DIR . 'ssr_login.php';
 require_once SSR_SC_DIR . 'ssr_nav.php';
 require_once SSR_SC_DIR . 'ssr_suivi.php';
 require_once SSR_SC_DIR . 'retards_verif.php';
+require_once SSR_SC_DIR . 'liste_retenues.php';
 
 // Activation / deactivation hooks
 register_activation_hook(__FILE__, 'ssr_activate_segmented');
