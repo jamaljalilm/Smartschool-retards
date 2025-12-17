@@ -33,14 +33,14 @@ function ssr_api(string $method, array $params = []) {
     // Pas d’extension SOAP -> pas d’appel
     if (!class_exists('SoapClient')) return [];
 
-    // Timeout très élevé pour OVH - getAbsentsWithInternalNumberByDate peut être très lent
+    // Timeout élevé pour OVH - getAbsentsWithInternalNumberByDate peut être lent
     $old_default_socket_timeout = @ini_get('default_socket_timeout');
-    @ini_set('default_socket_timeout', '300'); // 5 minutes max
+    @ini_set('default_socket_timeout', '120'); // 2 minutes max (limite PHP OVH)
 
     // Contexte SSL - désactivé pour OVH qui bloque les connexions HTTPS sortantes
     $ctx = stream_context_create([
         'http' => [
-            'timeout' => 300, // 5 minutes max
+            'timeout' => 120, // 2 minutes max
         ],
         'ssl' => [
             'verify_peer' => false,       // Désactivé pour OVH

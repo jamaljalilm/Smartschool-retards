@@ -39,12 +39,51 @@ function ssr_admin_test_messages_render(){
             $result_msg = 'Erreur : le corps du message est requis.';
             $result_type = 'error';
         } else {
+            // Récupérer les détails de l'utilisateur pour remplacer les variables
+            $user_details = null;
+            $first_name = '';
+            $last_name = '';
+            $class_code = '';
+
+            if (function_exists('ssr_api')) {
+                // Essayer de récupérer les détails via l'API
+                $user_details = ssr_api('getUserDetails', [$user_id]);
+
+                if (is_array($user_details) && !empty($user_details)) {
+                    $first_name = isset($user_details['voornaam']) ? $user_details['voornaam'] : '';
+                    $last_name = isset($user_details['naam']) ? $user_details['naam'] : '';
+
+                    // Récupérer la classe officielle
+                    if (!empty($user_details['groups']) && is_array($user_details['groups'])) {
+                        foreach ($user_details['groups'] as $g) {
+                            if (!empty($g['isKlas']) && !empty($g['isOfficial'])) {
+                                $class_code = isset($g['code']) ? $g['code'] : (isset($g['name']) ? $g['name'] : '');
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Remplacement des variables dans le titre et le corps
+            $title_final = str_replace(
+                ['{prenom}', '{nom}', '{classe}'],
+                [$first_name, $last_name, $class_code],
+                $title
+            );
+
+            $body_final = str_replace(
+                ['{prenom}', '{nom}', '{classe}'],
+                [$first_name, $last_name, $class_code],
+                $body
+            );
+
             // Envoi du message
             if (function_exists('ssr_api_send_message')) {
                 $result = ssr_api_send_message(
                     $user_id,
-                    $title,
-                    $body,
+                    $title_final,
+                    $body_final,
                     $sender,
                     null,        // attachments
                     $coaccount,  // coaccount
@@ -71,12 +110,12 @@ function ssr_admin_test_messages_render(){
                         $table_name,
                         [
                             'user_identifier' => $user_id,
-                            'class_code' => null,
-                            'last_name' => null,
-                            'first_name' => null,
+                            'class_code' => $class_code,
+                            'last_name' => $last_name,
+                            'first_name' => $first_name,
                             'date_retard' => current_time('Y-m-d'),
-                            'message_title' => $title,
-                            'message_content' => $body,
+                            'message_title' => $title_final,
+                            'message_content' => $body_final,
                             'sent_to_student' => ($coaccount === null) ? 1 : 0,
                             'sent_to_parent1' => ($coaccount === 1) ? 1 : 0,
                             'sent_to_parent2' => ($coaccount === 2) ? 1 : 0,
@@ -94,6 +133,18 @@ function ssr_admin_test_messages_render(){
                 } else {
                     $coaccount_label = ($coaccount === null) ? 'compte principal' : 'coaccount ' . $coaccount;
                     $result_msg = 'Message envoyé avec succès à l\'utilisateur ' . esc_html($user_id) . ' (' . $coaccount_label . ')';
+
+                    // Afficher les variables remplacées si disponibles
+                    if ($first_name || $last_name || $class_code) {
+                        $result_msg .= '<br><small>Variables remplacées : ';
+                        $vars_replaced = [];
+                        if ($first_name) $vars_replaced[] = '{prenom} → ' . esc_html($first_name);
+                        if ($last_name) $vars_replaced[] = '{nom} → ' . esc_html($last_name);
+                        if ($class_code) $vars_replaced[] = '{classe} → ' . esc_html($class_code);
+                        $result_msg .= implode(' | ', $vars_replaced);
+                        $result_msg .= '</small>';
+                    }
+
                     $result_type = 'success';
 
                     // Log
@@ -117,12 +168,12 @@ function ssr_admin_test_messages_render(){
                         $table_name,
                         [
                             'user_identifier' => $user_id,
-                            'class_code' => null,
-                            'last_name' => null,
-                            'first_name' => null,
+                            'class_code' => $class_code,
+                            'last_name' => $last_name,
+                            'first_name' => $first_name,
                             'date_retard' => current_time('Y-m-d'),
-                            'message_title' => $title,
-                            'message_content' => $body,
+                            'message_title' => $title_final,
+                            'message_content' => $body_final,
                             'sent_to_student' => ($coaccount === null) ? 1 : 0,
                             'sent_to_parent1' => ($coaccount === 1) ? 1 : 0,
                             'sent_to_parent2' => ($coaccount === 2) ? 1 : 0,
@@ -164,6 +215,15 @@ function ssr_admin_test_messages_render(){
                 Utilisez cet outil pour tester l'envoi de messages via l'API Smartschool sendMsg.
                 <br><strong>Attention :</strong> Les messages seront réellement envoyés !
             </p>
+            <div style="background: #e7f3ff; border-left: 4px solid #0073aa; padding: 12px; margin: 15px 0;">
+                <strong>💡 Variables disponibles :</strong>
+                <ul style="margin: 8px 0 0 0; line-height: 1.6;">
+                    <li><code>{prenom}</code> - Prénom de l'élève</li>
+                    <li><code>{nom}</code> - Nom de famille de l'élève</li>
+                    <li><code>{classe}</code> - Classe officielle de l'élève</li>
+                </ul>
+                <small style="color: #666;">Les variables seront automatiquement remplacées par les données réelles de l'élève.</small>
+            </div>
 
             <form method="post" action="">
                 <?php wp_nonce_field('ssr_test_send_message', 'ssr_test_nonce'); ?>
@@ -206,7 +266,7 @@ function ssr_admin_test_messages_render(){
                         </th>
                         <td>
                             <?php
-                            $default_message = "Bonjour,\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron.\n\nMonsieur Khali";
+                            $default_message = "Bonjour {prenom},\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron.\n\nMonsieur Khali";
                             $message_content = isset($_POST['message_body']) ? wp_kses_post($_POST['message_body']) : $default_message;
 
                             wp_editor(
@@ -225,7 +285,10 @@ function ssr_admin_test_messages_render(){
                                 )
                             );
                             ?>
-                            <p class="description">Utilisez l'éditeur pour formater votre message (gras, couleurs, listes, etc.)</p>
+                            <p class="description">
+                                Utilisez l'éditeur pour formater votre message (gras, couleurs, listes, etc.)<br>
+                                <strong>Variables disponibles :</strong> <code>{prenom}</code>, <code>{nom}</code>, <code>{classe}</code>
+                            </p>
                         </td>
                     </tr>
 
