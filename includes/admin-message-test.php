@@ -266,7 +266,33 @@ function ssr_admin_test_messages_render(){
                         </th>
                         <td>
                             <?php
-                            $default_message = "Bonjour {prenom},\n\ntu étais en retard aujourd'hui.\n\nMerci de venir te présenter demain pendant l'heure du midi au péron.\n\nMonsieur Khali";
+                            $default_message = '<div>
+<p style="margin-bottom: 15px;">Bonjour {prenom},</p>
+<p style="margin-bottom: 15px;">Tu as été en retard aujourd\'hui. Tu seras donc <span style="color: #e03e2d;"><strong>privé de sortie</strong></span> la prochaine pause de midi. Merci de venir te présenter à la prochaine pause de midi à <strong>l\'accueil à 13h05</strong>.</p>
+<p style="margin-bottom: 15px;">⚠️ N\'oublie pas de prévoir de quoi manger.</p>
+<p style="margin-bottom: 15px;"><strong>Attention :</strong></p>
+
+<ul style="margin-bottom: 5px;">
+ 	<li>Si tu ne te présentes pas <strong>5 fois</strong>, tu auras une <span style="color: #e03e2d;"><strong>retenue</strong></span>.</li>
+ 	<li>Si tu as été en retard <strong>2 fois le même jour</strong> (matin et après-midi) et que tu ne te présentes pas, cela comptera pour <strong>deux non-présentations</strong>.</li>
+</ul>
+<p style="margin-bottom: 15px;">Cordialement,</p>
+
+</div>
+<div style="font-family: Arial, sans-serif; font-size: 14px; color: #000;">
+<table style="border-collapse: collapse;" cellspacing="0" cellpadding="0">
+<tbody>
+<tr>
+<td style="padding-right: 15px; vertical-align: top;">
+<p style="margin: 0px; font-weight: bold; font-size: 16px; text-align: right;">Robot IA - INDL Retards</p>
+<p style="margin: 2px 0px; font-style: italic; color: #333333; text-align: right;">Rue Edmond Tollenaere, 32
+1020 Bruxelles</p>
+</td>
+<td style="vertical-align: top;"><a href="https://indl.be/" target="_blank" rel="noopener"> <img style="float: left;" src="https://indl.be/wp-content/uploads/2023/04/185-low.gif" alt="Logo Institut Notre-Dame de Lourdes" width="180" height="50" border="0" /> </a></td>
+</tr>
+</tbody>
+</table>
+</div>';
                             $message_content = isset($_POST['message_body']) ? wp_kses_post($_POST['message_body']) : $default_message;
 
                             wp_editor(
