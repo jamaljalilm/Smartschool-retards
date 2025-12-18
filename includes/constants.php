@@ -13,6 +13,7 @@ global $wpdb;
 if (!defined('SSR_T_LOG'))       define('SSR_T_LOG',       $wpdb->prefix . 'smartschool_retards_log');
 if (!defined('SSR_T_VERIF'))     define('SSR_T_VERIF',     $wpdb->prefix . 'smartschool_retards_verif');
 if (!defined('SSR_T_VERIFIERS')) define('SSR_T_VERIFIERS', $wpdb->prefix . 'smartschool_retards_verifiers');
+if (!defined('SSR_T_SANCTIONS')) define('SSR_T_SANCTIONS', $wpdb->prefix . 'smartschool_retenues_sanctions');
 
 /* ===================== Options (nouvelle UI) ===================== */
 if (!defined('SSR_OPT_ENDPOINT'))   define('SSR_OPT_ENDPOINT',   'ssr_api_endpoint');      // endpoint HTTP (nouvelle API)

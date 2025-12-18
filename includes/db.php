@@ -8,6 +8,7 @@ function ssr_db_maybe_create_tables(){
     $log = SSR_T_LOG;
     $ver = SSR_T_VERIF;
     $messages = $wpdb->prefix . 'smartschool_daily_messages';
+    $sanctions = SSR_T_SANCTIONS;
 
     $sql = [];
     $sql[] = "CREATE TABLE IF NOT EXISTS $log (
@@ -57,6 +58,25 @@ function ssr_db_maybe_create_tables(){
         KEY idx_date (date_retard),
         KEY idx_student (user_identifier),
         KEY idx_sent_at (sent_at)
+    ) $charset;";
+
+    $sql[] = "CREATE TABLE IF NOT EXISTS $sanctions (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        user_identifier VARCHAR(64) NOT NULL,
+        class_code VARCHAR(64) NULL,
+        last_name VARCHAR(191) NULL,
+        first_name VARCHAR(191) NULL,
+        nb_absences INT NOT NULL,
+        sanction_type VARCHAR(50) NOT NULL,
+        date_sanction DATE NULL,
+        assigned_by_id VARCHAR(64) NULL,
+        assigned_by_name VARCHAR(191) NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NULL,
+        UNIQUE KEY uniq_user_sanction (user_identifier),
+        KEY idx_date (date_sanction),
+        KEY idx_assigned (assigned_by_id),
+        PRIMARY KEY(id)
     ) $charset;";
 
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';

@@ -1,6 +1,108 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
+// Handler AJAX pour sauvegarder les dates de sanction
+add_action('wp_ajax_ssr_save_sanction_date', function() {
+	global $wpdb;
+
+	// Vérifier l'authentification
+	if (!ssr_is_logged_in_pin()) {
+		wp_send_json_error(['message' => 'Non authentifié']);
+		return;
+	}
+
+	// Récupérer les données
+	$user_identifier = sanitize_text_field($_POST['user_identifier'] ?? '');
+	$date_sanction = sanitize_text_field($_POST['date_sanction'] ?? '');
+	$class_code = sanitize_text_field($_POST['class_code'] ?? '');
+	$lastname = sanitize_text_field($_POST['lastname'] ?? '');
+	$firstname = sanitize_text_field($_POST['firstname'] ?? '');
+	$nb_absences = intval($_POST['nb_absences'] ?? 0);
+	$sanction_type = sanitize_text_field($_POST['sanction_type'] ?? '');
+
+	if (empty($user_identifier)) {
+		wp_send_json_error(['message' => 'Identifiant élève manquant']);
+		return;
+	}
+
+	// Récupérer le vérificateur actuel
+	$verifier = ssr_current_verifier();
+	$verifier_id = $verifier['id'] ?? '';
+	$verifier_name = $verifier['name'] ?? '';
+
+	$sanctions_table = SSR_T_SANCTIONS;
+
+	// Vérifier si une entrée existe déjà
+	$existing = $wpdb->get_row($wpdb->prepare(
+		"SELECT * FROM {$sanctions_table} WHERE user_identifier = %s",
+		$user_identifier
+	));
+
+	$now = current_time('mysql');
+
+	if ($existing) {
+		// Mettre à jour
+		$wpdb->update(
+			$sanctions_table,
+			[
+				'date_sanction' => $date_sanction ?: null,
+				'nb_absences' => $nb_absences,
+				'sanction_type' => $sanction_type,
+				'assigned_by_id' => $verifier_id,
+				'assigned_by_name' => $verifier_name,
+				'updated_at' => $now,
+			],
+			['user_identifier' => $user_identifier],
+			['%s', '%d', '%s', '%s', '%s', '%s'],
+			['%s']
+		);
+
+		// Logger l'action
+		if ($date_sanction) {
+			ssr_log(
+				"Date de sanction modifiée pour {$firstname} {$lastname} ({$user_identifier}): {$date_sanction} par {$verifier_name}",
+				'info',
+				'sanctions'
+			);
+		} else {
+			ssr_log(
+				"Date de sanction supprimée pour {$firstname} {$lastname} ({$user_identifier}) par {$verifier_name}",
+				'info',
+				'sanctions'
+			);
+		}
+	} else {
+		// Insérer
+		$wpdb->insert(
+			$sanctions_table,
+			[
+				'user_identifier' => $user_identifier,
+				'class_code' => $class_code,
+				'last_name' => $lastname,
+				'first_name' => $firstname,
+				'nb_absences' => $nb_absences,
+				'sanction_type' => $sanction_type,
+				'date_sanction' => $date_sanction ?: null,
+				'assigned_by_id' => $verifier_id,
+				'assigned_by_name' => $verifier_name,
+				'created_at' => $now,
+			],
+			['%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s']
+		);
+
+		// Logger l'action
+		if ($date_sanction) {
+			ssr_log(
+				"Date de sanction attribuée pour {$firstname} {$lastname} ({$user_identifier}): {$date_sanction} par {$verifier_name}",
+				'info',
+				'sanctions'
+			);
+		}
+	}
+
+	wp_send_json_success(['message' => 'Date sauvegardée']);
+});
+
 add_shortcode('liste_retenues', function() {
 	if (!ssr_is_logged_in_pin()) {
 		if (!function_exists('ssr_is_editor_context') || !ssr_is_editor_context()) {
@@ -13,6 +115,7 @@ add_shortcode('liste_retenues', function() {
 
 	global $wpdb;
 	$ver = $wpdb->prefix . 'smartschool_retards_verif';
+	$sanctions_table = SSR_T_SANCTIONS;
 
 	// Vérifier que la table existe (comme dans recap_retards.php ligne 102)
 	$has_verif = $wpdb->get_var($wpdb->prepare(
@@ -49,6 +152,19 @@ add_shortcode('liste_retenues', function() {
 	", $today);
 
 	$students = $wpdb->get_results($query, ARRAY_A);
+
+	// Charger les dates de sanction existantes
+	$sanctions_data = [];
+	if (!empty($students)) {
+		$user_ids = array_column($students, 'user_identifier');
+		$placeholders = implode(',', array_fill(0, count($user_ids), '%s'));
+		$sanctions_query = "SELECT * FROM {$sanctions_table} WHERE user_identifier IN ($placeholders)";
+		$sanctions_results = $wpdb->get_results($wpdb->prepare($sanctions_query, ...$user_ids), ARRAY_A);
+
+		foreach ($sanctions_results as $sanction) {
+			$sanctions_data[$sanction['user_identifier']] = $sanction;
+		}
+	}
 
 	// Calcul des statistiques
 	$total_students = count($students);
@@ -504,27 +620,42 @@ add_shortcode('liste_retenues', function() {
 		<tbody>
 			<?php foreach ($students as $student):
 				$nb = (int)$student['nb_absences'];
+				$user_id = $student['user_identifier'];
 
 				// Déterminer la sanction et la catégorie pour le filtrage
 				if ($nb >= 20) {
 					$sanction_label = 'Jour de renvoi';
 					$sanction_class = 'ssr-badge-renvoi';
 					$filter_category = '20+';
+					$sanction_type = 'jour_renvoi';
 				} elseif ($nb >= 15) {
 					$sanction_label = 'Demi-jour de renvoi';
 					$sanction_class = 'ssr-badge-renvoi-demi';
 					$filter_category = '15-19';
+					$sanction_type = 'demi_jour';
 				} elseif ($nb >= 10) {
 					$sanction_label = 'Retenue 2';
 					$sanction_class = 'ssr-badge-retenue-2';
 					$filter_category = '10-14';
+					$sanction_type = 'retenue_2';
 				} else {
 					$sanction_label = 'Retenue 1';
 					$sanction_class = 'ssr-badge-retenue-1';
 					$filter_category = '5-9';
+					$sanction_type = 'retenue_1';
 				}
+
+				// Récupérer la date existante si elle existe
+				$existing_date = $sanctions_data[$user_id]['date_sanction'] ?? '';
 			?>
-			<tr class="ssr-student-row" data-category="<?php echo esc_attr($filter_category); ?>">
+			<tr class="ssr-student-row"
+				data-category="<?php echo esc_attr($filter_category); ?>"
+				data-user-id="<?php echo esc_attr($user_id); ?>"
+				data-class="<?php echo esc_attr($student['class_code'] ?? ''); ?>"
+				data-lastname="<?php echo esc_attr($student['lastname'] ?? ''); ?>"
+				data-firstname="<?php echo esc_attr($student['firstname'] ?? ''); ?>"
+				data-nb-absences="<?php echo esc_attr($nb); ?>"
+				data-sanction-type="<?php echo esc_attr($sanction_type); ?>">
 				<td><?php echo esc_html($student['class_code'] ?? '—'); ?></td>
 				<td><?php echo esc_html($student['lastname'] ?? '—'); ?></td>
 				<td><?php echo esc_html($student['firstname'] ?? '—'); ?></td>
@@ -536,7 +667,7 @@ add_shortcode('liste_retenues', function() {
 				</td>
 				<td>
 					<div class="ssr-date-wrapper">
-						<input type="date" class="ssr-date-sanction" value="" />
+						<input type="date" class="ssr-date-sanction" value="<?php echo esc_attr($existing_date); ?>" />
 						<button type="button" class="ssr-clear-date" title="Annuler la date">×</button>
 					</div>
 				</td>
@@ -622,8 +753,9 @@ add_shortcode('liste_retenues', function() {
 		document.querySelectorAll('.ssr-date-wrapper').forEach(wrapper => {
 			const input = wrapper.querySelector('.ssr-date-sanction');
 			const clearBtn = wrapper.querySelector('.ssr-clear-date');
+			const row = wrapper.closest('.ssr-student-row');
 
-			if (!input || !clearBtn) return;
+			if (!input || !clearBtn || !row) return;
 
 			// Mettre à jour l'apparence selon la valeur
 			function updateAppearance() {
@@ -638,8 +770,53 @@ add_shortcode('liste_retenues', function() {
 				applyFilters();
 			}
 
+			// Fonction pour sauvegarder la date via AJAX
+			function saveDateToServer() {
+				const formData = new FormData();
+				formData.append('action', 'ssr_save_sanction_date');
+				formData.append('user_identifier', row.getAttribute('data-user-id'));
+				formData.append('date_sanction', input.value);
+				formData.append('class_code', row.getAttribute('data-class'));
+				formData.append('lastname', row.getAttribute('data-lastname'));
+				formData.append('firstname', row.getAttribute('data-firstname'));
+				formData.append('nb_absences', row.getAttribute('data-nb-absences'));
+				formData.append('sanction_type', row.getAttribute('data-sanction-type'));
+
+				// Indicateur visuel de chargement
+				input.style.opacity = '0.6';
+
+				fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+					method: 'POST',
+					body: formData
+				})
+				.then(response => response.json())
+				.then(data => {
+					input.style.opacity = '1';
+					if (data.success) {
+						// Afficher brièvement une bordure verte pour confirmer
+						input.style.borderColor = '#2e7d32';
+						setTimeout(() => {
+							input.style.borderColor = '';
+						}, 1000);
+					} else {
+						// Afficher une bordure rouge en cas d'erreur
+						input.style.borderColor = '#dc2626';
+						alert('Erreur lors de la sauvegarde: ' + (data.data?.message || 'Erreur inconnue'));
+					}
+				})
+				.catch(error => {
+					input.style.opacity = '1';
+					input.style.borderColor = '#dc2626';
+					console.error('Erreur AJAX:', error);
+					alert('Erreur de connexion lors de la sauvegarde');
+				});
+			}
+
 			// Au changement de date
-			input.addEventListener('change', updateAppearance);
+			input.addEventListener('change', function() {
+				updateAppearance();
+				saveDateToServer();
+			});
 			input.addEventListener('input', updateAppearance);
 			input.addEventListener('blur', updateAppearance);
 
@@ -648,6 +825,7 @@ add_shortcode('liste_retenues', function() {
 				e.preventDefault();
 				input.value = '';
 				updateAppearance();
+				saveDateToServer(); // Sauvegarder la suppression
 			});
 
 			// Initialisation
