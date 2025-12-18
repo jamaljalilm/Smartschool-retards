@@ -259,6 +259,12 @@ add_shortcode('liste_retenues', function() {
 		gap: 10px;
 	}
 
+	.ssr-retenues-filters-date {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 10px;
+	}
+
 	.ssr-stat-card {
 		padding: 12px;
 		background: #f9fafb;
@@ -300,20 +306,38 @@ add_shortcode('liste_retenues', function() {
 	.ssr-date-wrapper {
 		display: inline-flex;
 		align-items: center;
-		gap: 6px;
+		gap: 8px;
 		justify-content: center;
+		min-width: 200px;
 	}
 
 	/* Champ date de sanction */
 	.ssr-date-sanction {
-		padding: 6px 8px;
+		padding: 6px 10px;
 		border: 2px solid #d1d5db;
 		border-radius: 6px;
 		background: #f3f4f6;
 		font-size: 14px;
-		width: 130px;
+		width: 150px;
 		transition: all 0.2s;
 		text-align: center;
+		position: relative;
+		color: #666;
+	}
+
+	/* Afficher "à fixer" quand le champ est vide */
+	.ssr-date-sanction:not(.has-value)::before {
+		content: 'à fixer';
+		color: #999;
+		pointer-events: none;
+	}
+
+	.ssr-date-sanction:not(.has-value)::-webkit-datetime-edit {
+		opacity: 0;
+	}
+
+	.ssr-date-sanction.has-value::-webkit-datetime-edit {
+		opacity: 1;
 	}
 
 	.ssr-date-sanction:focus {
@@ -325,6 +349,7 @@ add_shortcode('liste_retenues', function() {
 	.ssr-date-sanction.has-value {
 		background: #e8f7ee;
 		border-color: #2e7d32;
+		color: #222;
 	}
 
 	/* Bouton croix pour annuler la date */
@@ -333,14 +358,15 @@ add_shortcode('liste_retenues', function() {
 		color: #fff;
 		border: none;
 		border-radius: 4px;
-		width: 24px;
-		height: 24px;
+		width: 26px;
+		height: 26px;
 		cursor: pointer;
 		font-size: 16px;
 		line-height: 1;
 		padding: 0;
 		display: none;
 		transition: background 0.2s;
+		flex-shrink: 0;
 	}
 
 	.ssr-clear-date:hover {
@@ -348,7 +374,9 @@ add_shortcode('liste_retenues', function() {
 	}
 
 	.ssr-date-wrapper.has-date .ssr-clear-date {
-		display: inline-block;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	/* Centrer la date dans sa cellule */
@@ -378,6 +406,14 @@ add_shortcode('liste_retenues', function() {
 			width: 20px;
 			height: 20px;
 			font-size: 14px;
+		}
+
+		.ssr-retenues-filters-date {
+			grid-template-columns: 1fr;
+		}
+
+		.ssr-date-wrapper {
+			min-width: 160px;
 		}
 	}
 </style>
@@ -421,28 +457,44 @@ add_shortcode('liste_retenues', function() {
 	<h3 style="text-align:left;margin-top:15px;margin-bottom:10px;font-weight:bold;">Filtrer par sanction</h3>
 	<div class="ssr-retenues-stats">
 		<!-- Bouton "Tous les élèves" seul sur sa ligne -->
-		<button type="button" class="ssr-stat-card ssr-filter-btn active" data-filter="all">
+		<button type="button" class="ssr-stat-card ssr-filter-btn active" data-filter="all" data-filter-type="sanction">
 			<div class="ssr-stat-number"><?php echo $total_students; ?></div>
 			<div class="ssr-stat-label">Tous les élèves</div>
 		</button>
 
 		<!-- Grille 2x2 pour les autres boutons -->
 		<div class="ssr-retenues-filters">
-			<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="5-9">
+			<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="5-9" data-filter-type="sanction">
 				<div class="ssr-stat-number"><?php echo $count_5; ?></div>
 				<div class="ssr-stat-label">Retenue 1<br>(5-9 absences)</div>
 			</button>
-			<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="10-14">
+			<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="10-14" data-filter-type="sanction">
 				<div class="ssr-stat-number"><?php echo $count_10; ?></div>
 				<div class="ssr-stat-label">Retenue 2<br>(10-14 absences)</div>
 			</button>
-			<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="15-19">
+			<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="15-19" data-filter-type="sanction">
 				<div class="ssr-stat-number"><?php echo $count_15; ?></div>
 				<div class="ssr-stat-label">Demi-jour de renvoi<br>(15-19 absences)</div>
 			</button>
-			<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="20+">
+			<button type="button" class="ssr-stat-card ssr-filter-btn" data-filter="20+" data-filter-type="sanction">
 				<div class="ssr-stat-number"><?php echo $count_20; ?></div>
 				<div class="ssr-stat-label">Jour de renvoi<br>(20+ absences)</div>
+			</button>
+		</div>
+	</div>
+
+	<!-- Filtres par date fixée ou non -->
+	<h3 style="text-align:left;margin-top:20px;margin-bottom:10px;font-weight:bold;">Filtrer par statut de date</h3>
+	<div class="ssr-retenues-stats">
+		<div class="ssr-retenues-filters-date">
+			<button type="button" class="ssr-stat-card ssr-filter-date active" data-filter="all-dates">
+				<div class="ssr-stat-label">Tous</div>
+			</button>
+			<button type="button" class="ssr-stat-card ssr-filter-date" data-filter="with-date">
+				<div class="ssr-stat-label">Avec date fixée</div>
+			</button>
+			<button type="button" class="ssr-stat-card ssr-filter-date" data-filter="without-date">
+				<div class="ssr-stat-label">Sans date fixée</div>
 			</button>
 		</div>
 	</div>
@@ -503,7 +555,7 @@ add_shortcode('liste_retenues', function() {
 				</td>
 				<td>
 					<div class="ssr-date-wrapper">
-						<input type="text" class="ssr-date-sanction" placeholder="à fixer" value="" />
+						<input type="date" class="ssr-date-sanction" value="" />
 						<button type="button" class="ssr-clear-date" title="Annuler la date">×</button>
 					</div>
 				</td>
@@ -518,29 +570,70 @@ add_shortcode('liste_retenues', function() {
 (function() {
 	// Attendre que le DOM soit complètement chargé
 	document.addEventListener('DOMContentLoaded', function() {
-		// ===== Filtrage par catégorie de sanction =====
 		const filterBtns = document.querySelectorAll('.ssr-filter-btn');
+		const filterDateBtns = document.querySelectorAll('.ssr-filter-date');
 		const rows = document.querySelectorAll('.ssr-student-row');
 
+		// État des filtres
+		let currentSanctionFilter = 'all';
+		let currentDateFilter = 'all-dates';
+
+		// Fonction pour appliquer les filtres combinés
+		function applyFilters() {
+			rows.forEach(row => {
+				const category = row.getAttribute('data-category');
+				const dateInput = row.querySelector('.ssr-date-sanction');
+				const hasDate = dateInput && dateInput.value && dateInput.value.trim() !== '';
+
+				// Vérifier le filtre par sanction
+				const matchesSanction = currentSanctionFilter === 'all' || category === currentSanctionFilter;
+
+				// Vérifier le filtre par date
+				let matchesDate = true;
+				if (currentDateFilter === 'with-date') {
+					matchesDate = hasDate;
+				} else if (currentDateFilter === 'without-date') {
+					matchesDate = !hasDate;
+				}
+
+				// Afficher seulement si les deux filtres correspondent
+				if (matchesSanction && matchesDate) {
+					row.classList.remove('hidden');
+				} else {
+					row.classList.add('hidden');
+				}
+			});
+		}
+
+		// ===== Filtrage par catégorie de sanction =====
 		filterBtns.forEach(btn => {
 			btn.addEventListener('click', function(e) {
 				e.preventDefault();
-				const filter = this.getAttribute('data-filter');
+				currentSanctionFilter = this.getAttribute('data-filter');
 
-				// Retire la classe active de tous les boutons
+				// Retire la classe active de tous les boutons de sanction
 				filterBtns.forEach(b => b.classList.remove('active'));
 				// Ajoute la classe active au bouton cliqué
 				this.classList.add('active');
 
-				// Filtre les lignes
-				rows.forEach(row => {
-					const category = row.getAttribute('data-category');
-					if (filter === 'all' || category === filter) {
-						row.classList.remove('hidden');
-					} else {
-						row.classList.add('hidden');
-					}
-				});
+				// Applique les filtres
+				applyFilters();
+			});
+		});
+
+		// ===== Filtrage par date fixée/non fixée =====
+		filterDateBtns.forEach(btn => {
+			btn.addEventListener('click', function(e) {
+				e.preventDefault();
+				currentDateFilter = this.getAttribute('data-filter');
+
+				// Retire la classe active de tous les boutons de date
+				filterDateBtns.forEach(b => b.classList.remove('active'));
+				// Ajoute la classe active au bouton cliqué
+				this.classList.add('active');
+
+				// Applique les filtres
+				applyFilters();
 			});
 		});
 
@@ -560,6 +653,8 @@ add_shortcode('liste_retenues', function() {
 					input.classList.remove('has-value');
 					wrapper.classList.remove('has-date');
 				}
+				// Réappliquer les filtres quand une date change
+				applyFilters();
 			}
 
 			// Au changement de date
