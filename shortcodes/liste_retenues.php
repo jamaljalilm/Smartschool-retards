@@ -163,87 +163,6 @@ add_shortcode('liste_retenues', function() {
 		color: #d32f2f;
 	}
 
-	/* Tableau récap (infos utiles) */
-	#ssr-retenues-info {
-		width: 100%;
-		max-width: 800px;
-		margin: 10px auto;
-		border-collapse: separate;
-		border-spacing: 0 8px;
-	}
-
-	#ssr-retenues-info th,
-	#ssr-retenues-info td {
-		vertical-align: middle;
-		padding: 10px 0;
-		border: none;
-		background: transparent;
-	}
-
-	#ssr-retenues-info th {
-		width: 30%;
-		text-align: left;
-		font-weight: 700;
-	}
-
-	#ssr-retenues-info td {
-		text-align: left;
-	}
-
-	#ssr-retenues-info input[type="date"] {
-		background: #eef7ff;
-		border: 1px solid #4090e0;
-		border-radius: 6px;
-		color: #222;
-		padding: 8px 10px;
-		transition: 0.2s;
-	}
-
-	#ssr-retenues-info input[type="date"]:focus {
-		box-shadow: 0 0 0 2px rgba(64,144,224,0.3);
-		outline: none;
-	}
-
-	#ssr-retenues-info .ssr-small-btn {
-		background: #4090e0;
-		color: #fff;
-		border: none;
-		border-radius: 6px;
-		font-weight: 600;
-		padding: 6px 14px;
-		cursor: pointer;
-		transition: background 0.2s ease;
-	}
-
-	#ssr-retenues-info .ssr-small-btn:hover {
-		background: #2e77c8;
-	}
-
-	/* Pastilles */
-	.ssr-badges {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-		align-items: center;
-	}
-
-	.ssr-pill {
-		display: inline-flex;
-		align-items: center;
-		padding: 4px 8px;
-		border-radius: 999px;
-		font-size: 12px;
-		font-weight: 700;
-		line-height: 1.2;
-		border: 1px solid transparent;
-	}
-
-	.ssr-pill--neutral {
-		background: #f1f3f4;
-		color: #3c4043;
-		border-color: #e0e3e7;
-	}
-
 	/* Statistiques - Bouton "Tous" seul + 2x2 pour les autres */
 	.ssr-retenues-stats {
 		display: grid;
@@ -306,19 +225,18 @@ add_shortcode('liste_retenues', function() {
 	.ssr-date-wrapper {
 		display: inline-flex;
 		align-items: center;
-		gap: 8px;
+		gap: 6px;
 		justify-content: center;
-		min-width: 200px;
 	}
 
 	/* Champ date de sanction */
 	.ssr-date-sanction {
-		padding: 6px 10px;
+		padding: 6px 8px;
 		border: 2px solid #d1d5db;
 		border-radius: 6px;
 		background: #f3f4f6;
-		font-size: 14px;
-		width: 150px;
+		font-size: 13px;
+		width: 90px;
 		transition: all 0.2s;
 		text-align: center;
 		position: relative;
@@ -330,6 +248,7 @@ add_shortcode('liste_retenues', function() {
 		content: 'à fixer';
 		color: #999;
 		pointer-events: none;
+		font-size: 13px;
 	}
 
 	.ssr-date-sanction:not(.has-value)::-webkit-datetime-edit {
@@ -340,16 +259,19 @@ add_shortcode('liste_retenues', function() {
 		opacity: 1;
 	}
 
-	.ssr-date-sanction:focus {
-		border-color: #f57c00;
-		outline: none;
-		box-shadow: 0 0 0 2px rgba(245,124,0,0.1);
-	}
-
+	/* Quand une date est choisie, réduire pour laisser place à la croix */
 	.ssr-date-sanction.has-value {
 		background: #e8f7ee;
 		border-color: #2e7d32;
 		color: #222;
+		width: 120px;
+		font-size: 13px;
+	}
+
+	.ssr-date-sanction:focus {
+		border-color: #f57c00;
+		outline: none;
+		box-shadow: 0 0 0 2px rgba(245,124,0,0.1);
 	}
 
 	/* Bouton croix pour annuler la date */
@@ -358,10 +280,10 @@ add_shortcode('liste_retenues', function() {
 		color: #fff;
 		border: none;
 		border-radius: 4px;
-		width: 26px;
-		height: 26px;
+		width: 24px;
+		height: 24px;
 		cursor: pointer;
-		font-size: 16px;
+		font-size: 14px;
 		line-height: 1;
 		padding: 0;
 		display: none;
@@ -398,60 +320,27 @@ add_shortcode('liste_retenues', function() {
 		}
 
 		.ssr-date-sanction {
-			width: 110px;
+			width: 80px;
 			font-size: 12px;
+		}
+
+		.ssr-date-sanction.has-value {
+			width: 100px;
 		}
 
 		.ssr-clear-date {
 			width: 20px;
 			height: 20px;
-			font-size: 14px;
+			font-size: 12px;
 		}
 
 		.ssr-retenues-filters-date {
 			grid-template-columns: 1fr;
 		}
-
-		.ssr-date-wrapper {
-			min-width: 160px;
-		}
 	}
 </style>
 
 	<h2 class="ssr-retenues-title">Liste des retenues et renvois</h2>
-
-	<!-- Infos utiles -->
-	<h3 style="text-align:left;margin-top:5px;margin-bottom:5px;font-weight:bold;">Informations utiles</h3>
-	<table id="ssr-retenues-info">
-		<tr>
-			<th>Date du jour</th>
-			<td>
-				<div class="ssr-badges">
-					<span class="ssr-pill ssr-pill--neutral">
-						<?php echo esc_html(date_i18n('d/m/Y', strtotime($today))); ?>
-					</span>
-				</div>
-			</td>
-		</tr>
-		<tr>
-			<th>Vérificateur</th>
-			<td>
-				<div class="ssr-badges">
-					<span class="ssr-pill ssr-pill--neutral">
-						<?php echo esc_html($verifier_name); ?>
-					</span>
-				</div>
-			</td>
-		</tr>
-		<tr>
-			<th>Élèves concernés</th>
-			<td>
-				<div class="ssr-badges">
-					<span class="ssr-pill ssr-pill--neutral"><?php echo (int)$total_students; ?></span>
-				</div>
-			</td>
-		</tr>
-	</table>
 
 	<!-- Statistiques - BOUTONS FILTRES -->
 	<h3 style="text-align:left;margin-top:15px;margin-bottom:10px;font-weight:bold;">Filtrer par sanction</h3>
