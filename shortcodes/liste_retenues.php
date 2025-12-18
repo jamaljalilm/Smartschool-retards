@@ -128,22 +128,32 @@ add_shortcode('liste_retenues', function() {
 		text-align: center;
 	}
 
-	.ssr-badge-retenue {
+	/* Retenue 1 (5-9) : Jaune */
+	.ssr-badge-retenue-1 {
 		background: #fff3cd;
 		color: #856404;
 		border: 1px solid #ffc107;
 	}
 
-	.ssr-badge-renvoi-demi {
-		background: #ffe0b2;
-		color: #e65100;
-		border: 1px solid #ff9800;
+	/* Retenue 2 (10-14) : Orange */
+	.ssr-badge-retenue-2 {
+		background: #fff7ed;
+		color: #c2410c;
+		border: 1px solid #fb923c;
 	}
 
+	/* Demi-jour renvoi (15-19) : Rouge clair */
+	.ssr-badge-renvoi-demi {
+		background: #fee2e2;
+		color: #991b1b;
+		border: 1px solid #f87171;
+	}
+
+	/* Jour de renvoi (20+) : Rouge foncé */
 	.ssr-badge-renvoi {
 		background: #fdeaea;
-		color: #b00020;
-		border: 1px solid #d32f2f;
+		color: #7f1d1d;
+		border: 1px solid #dc2626;
 	}
 
 	/* Nombre d'absences en gras */
@@ -372,69 +382,6 @@ add_shortcode('liste_retenues', function() {
 	}
 </style>
 
-<script>
-(function() {
-	// ===== Filtrage par catégorie de sanction =====
-	const filterBtns = document.querySelectorAll('.ssr-filter-btn');
-	const rows = document.querySelectorAll('.ssr-student-row');
-
-	filterBtns.forEach(btn => {
-		btn.addEventListener('click', function(e) {
-			e.preventDefault();
-			const filter = this.getAttribute('data-filter');
-
-			// Retire la classe active de tous les boutons
-			filterBtns.forEach(b => b.classList.remove('active'));
-			// Ajoute la classe active au bouton cliqué
-			this.classList.add('active');
-
-			// Filtre les lignes
-			rows.forEach(row => {
-				const category = row.getAttribute('data-category');
-				if (filter === 'all' || category === filter) {
-					row.classList.remove('hidden');
-				} else {
-					row.classList.add('hidden');
-				}
-			});
-		});
-	});
-
-	// ===== Gestion des champs de date =====
-	document.querySelectorAll('.ssr-date-wrapper').forEach(wrapper => {
-		const input = wrapper.querySelector('.ssr-date-sanction');
-		const clearBtn = wrapper.querySelector('.ssr-clear-date');
-
-		if (!input || !clearBtn) return;
-
-		// Mettre à jour l'apparence selon la valeur
-		function updateAppearance() {
-			if (input.value) {
-				input.classList.add('has-value');
-				wrapper.classList.add('has-date');
-			} else {
-				input.classList.remove('has-value');
-				wrapper.classList.remove('has-date');
-			}
-		}
-
-		// Au changement de date
-		input.addEventListener('change', updateAppearance);
-		input.addEventListener('input', updateAppearance);
-
-		// Au clic sur la croix
-		clearBtn.addEventListener('click', function(e) {
-			e.preventDefault();
-			input.value = '';
-			updateAppearance();
-		});
-
-		// Initialisation
-		updateAppearance();
-	});
-})();
-</script>
-
 	<h2 class="ssr-retenues-title">Liste des retenues et renvois</h2>
 
 	<!-- Infos utiles -->
@@ -536,11 +483,11 @@ add_shortcode('liste_retenues', function() {
 					$filter_category = '15-19';
 				} elseif ($nb >= 10) {
 					$sanction_label = 'Retenue 2';
-					$sanction_class = 'ssr-badge-retenue';
+					$sanction_class = 'ssr-badge-retenue-2';
 					$filter_category = '10-14';
 				} else {
 					$sanction_label = 'Retenue 1';
-					$sanction_class = 'ssr-badge-retenue';
+					$sanction_class = 'ssr-badge-retenue-1';
 					$filter_category = '5-9';
 				}
 			?>
@@ -556,7 +503,7 @@ add_shortcode('liste_retenues', function() {
 				</td>
 				<td>
 					<div class="ssr-date-wrapper">
-						<input type="date" class="ssr-date-sanction" placeholder="JJ/MM/AAAA" value="" />
+						<input type="text" class="ssr-date-sanction" placeholder="à fixer" value="" />
 						<button type="button" class="ssr-clear-date" title="Annuler la date">×</button>
 					</div>
 				</td>
@@ -566,6 +513,73 @@ add_shortcode('liste_retenues', function() {
 	</table>
 
 	<?php endif; ?>
+
+<script>
+(function() {
+	// Attendre que le DOM soit complètement chargé
+	document.addEventListener('DOMContentLoaded', function() {
+		// ===== Filtrage par catégorie de sanction =====
+		const filterBtns = document.querySelectorAll('.ssr-filter-btn');
+		const rows = document.querySelectorAll('.ssr-student-row');
+
+		filterBtns.forEach(btn => {
+			btn.addEventListener('click', function(e) {
+				e.preventDefault();
+				const filter = this.getAttribute('data-filter');
+
+				// Retire la classe active de tous les boutons
+				filterBtns.forEach(b => b.classList.remove('active'));
+				// Ajoute la classe active au bouton cliqué
+				this.classList.add('active');
+
+				// Filtre les lignes
+				rows.forEach(row => {
+					const category = row.getAttribute('data-category');
+					if (filter === 'all' || category === filter) {
+						row.classList.remove('hidden');
+					} else {
+						row.classList.add('hidden');
+					}
+				});
+			});
+		});
+
+		// ===== Gestion des champs de date =====
+		document.querySelectorAll('.ssr-date-wrapper').forEach(wrapper => {
+			const input = wrapper.querySelector('.ssr-date-sanction');
+			const clearBtn = wrapper.querySelector('.ssr-clear-date');
+
+			if (!input || !clearBtn) return;
+
+			// Mettre à jour l'apparence selon la valeur
+			function updateAppearance() {
+				if (input.value && input.value.trim() !== '') {
+					input.classList.add('has-value');
+					wrapper.classList.add('has-date');
+				} else {
+					input.classList.remove('has-value');
+					wrapper.classList.remove('has-date');
+				}
+			}
+
+			// Au changement de date
+			input.addEventListener('change', updateAppearance);
+			input.addEventListener('input', updateAppearance);
+			input.addEventListener('blur', updateAppearance);
+
+			// Au clic sur la croix
+			clearBtn.addEventListener('click', function(e) {
+				e.preventDefault();
+				input.value = '';
+				updateAppearance();
+			});
+
+			// Initialisation
+			updateAppearance();
+		});
+	});
+})();
+</script>
 
 	<?php
 	return ob_get_clean();
