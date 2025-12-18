@@ -223,10 +223,11 @@ add_shortcode('liste_retenues', function() {
 
 	/* Wrapper date de sanction */
 	.ssr-date-wrapper {
-		display: inline-flex;
+		display: flex;
 		align-items: center;
 		gap: 6px;
 		justify-content: center;
+		width: 100%;
 	}
 
 	/* Champ date de sanction */
@@ -236,14 +237,12 @@ add_shortcode('liste_retenues', function() {
 		border-radius: 6px;
 		background: #f3f4f6;
 		font-size: 13px;
-		width: 120px;
+		width: 75%;
+		max-width: 120px;
 		transition: all 0.2s;
 		text-align: center;
 		position: relative;
 		color: #666;
-		display: flex;
-		align-items: center;
-		justify-content: center;
 	}
 
 	/* Afficher "à fixer" quand le champ est vide */
@@ -253,6 +252,10 @@ add_shortcode('liste_retenues', function() {
 		pointer-events: none;
 		font-size: 13px;
 		white-space: nowrap;
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
 	}
 
 	.ssr-date-sanction:not(.has-value)::-webkit-datetime-edit {
@@ -263,12 +266,13 @@ add_shortcode('liste_retenues', function() {
 		opacity: 1;
 	}
 
-	/* Quand une date est choisie, agrandir pour laisser place à la croix */
+	/* Quand une date est choisie, réduire pour laisser place à la croix */
 	.ssr-date-sanction.has-value {
 		background: #e8f7ee;
 		border-color: #2e7d32;
 		color: #222;
-		width: 105px;
+		width: 60%;
+		max-width: 105px;
 		font-size: 12px;
 	}
 
@@ -323,13 +327,15 @@ add_shortcode('liste_retenues', function() {
 		}
 
 		.ssr-date-sanction {
-			width: 110px;
 			font-size: 12px;
 		}
 
 		.ssr-date-sanction.has-value {
-			width: 100px;
 			font-size: 11px;
+		}
+
+		.ssr-date-sanction:not(.has-value)::before {
+			font-size: 12px;
 		}
 	}
 
@@ -341,13 +347,16 @@ add_shortcode('liste_retenues', function() {
 		}
 
 		.ssr-date-sanction {
-			width: 100px;
 			font-size: 11px;
+			padding: 5px 7px;
 		}
 
 		.ssr-date-sanction.has-value {
-			width: 90px;
 			font-size: 10px;
+		}
+
+		.ssr-date-sanction:not(.has-value)::before {
+			font-size: 11px;
 		}
 
 		.ssr-clear-date {
@@ -372,14 +381,16 @@ add_shortcode('liste_retenues', function() {
 		}
 
 		.ssr-date-sanction {
-			width: 90px;
 			font-size: 10px;
 			padding: 5px 6px;
 		}
 
 		.ssr-date-sanction.has-value {
-			width: 80px;
 			font-size: 9px;
+		}
+
+		.ssr-date-sanction:not(.has-value)::before {
+			font-size: 10px;
 		}
 
 		.ssr-clear-date {
@@ -401,13 +412,16 @@ add_shortcode('liste_retenues', function() {
 		}
 
 		.ssr-date-sanction {
-			width: 80px;
 			font-size: 9px;
+			padding: 4px 5px;
 		}
 
 		.ssr-date-sanction.has-value {
-			width: 70px;
 			font-size: 8px;
+		}
+
+		.ssr-date-sanction:not(.has-value)::before {
+			font-size: 9px;
 		}
 
 		.ssr-clear-date {
