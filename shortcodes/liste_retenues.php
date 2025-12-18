@@ -249,6 +249,7 @@ add_shortcode('liste_retenues', function() {
 		color: #999;
 		pointer-events: none;
 		font-size: 13px;
+		white-space: nowrap;
 	}
 
 	.ssr-date-sanction:not(.has-value)::-webkit-datetime-edit {
