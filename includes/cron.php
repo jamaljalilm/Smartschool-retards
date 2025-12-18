@@ -157,6 +157,11 @@ function ssr_cron_run_daily($manual=false){
         $nom = isset($r['last_name']) ? $r['last_name'] : '';
         $classe = isset($r['class_code']) ? $r['class_code'] : '';
 
+        // Log du userIdentifier pour debug
+        if (function_exists('ssr_log')) {
+            ssr_log("Processing student: $prenom $nom ($classe) - userIdentifier: $uid", 'info', 'cron');
+        }
+
         // Remplacement des variables dans le titre et le corps
         $title = $titleTpl;
         $title = str_replace('{prenom}', $prenom, $title);
