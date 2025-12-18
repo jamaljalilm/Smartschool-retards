@@ -22,8 +22,8 @@ function ssr_admin_test_messages_render(){
         check_admin_referer('ssr_test_send_message', 'ssr_test_nonce');
 
         $user_id     = isset($_POST['user_identifier']) ? sanitize_text_field($_POST['user_identifier']) : '';
-        $title       = isset($_POST['message_title']) ? sanitize_text_field($_POST['message_title']) : '';
-        $body        = isset($_POST['message_body']) ? wp_kses_post($_POST['message_body']) : '';
+        $title       = isset($_POST['message_title']) ? sanitize_text_field(wp_unslash($_POST['message_title'])) : '';
+        $body        = isset($_POST['message_body']) ? wp_kses_post(wp_unslash($_POST['message_body'])) : '';
         $sender      = isset($_POST['sender_identifier']) ? sanitize_text_field($_POST['sender_identifier']) : 'Null';
         $coaccount   = isset($_POST['coaccount']) ? intval($_POST['coaccount']) : null;
         $copy_to_lvs = !empty($_POST['copy_to_lvs']);
@@ -256,7 +256,7 @@ function ssr_admin_test_messages_render(){
                                    class="regular-text"
                                    required
                                    placeholder="Ex: Retard - Interdiction de sortir"
-                                   value="<?php echo isset($_POST['message_title']) ? esc_attr($_POST['message_title']) : 'Retard - Interdiction de sortir'; ?>">
+                                   value="<?php echo isset($_POST['message_title']) ? esc_attr(wp_unslash($_POST['message_title'])) : 'Retard - Interdiction de sortir'; ?>">
                         </td>
                     </tr>
 
@@ -266,10 +266,11 @@ function ssr_admin_test_messages_render(){
                         </th>
                         <td>
                             <?php
-                            $default_message = '<div>
+                            $default_message = <<<'HTML'
+<div>
 <p style="margin-bottom: 15px;">Bonjour {prenom},</p>
-<p style="margin-bottom: 15px;">Tu as été en retard aujourd\'hui. Tu seras donc <span style="color: #e03e2d;"><strong>privé de sortie</strong></span> la prochaine pause de midi. Merci de venir te présenter à la prochaine pause de midi à <strong>l\'accueil à 13h05</strong>.</p>
-<p style="margin-bottom: 15px;">⚠️ N\'oublie pas de prévoir de quoi manger.</p>
+<p style="margin-bottom: 15px;">Tu as été en retard aujourd'hui. Tu seras donc <span style="color: #e03e2d;"><strong>privé de sortie</strong></span> la prochaine pause de midi. Merci de venir te présenter à la prochaine pause de midi à <strong>l'accueil à 13h05</strong>.</p>
+<p style="margin-bottom: 15px;">⚠️ N'oublie pas de prévoir de quoi manger.</p>
 <p style="margin-bottom: 15px;"><strong>Attention :</strong></p>
 
 <ul style="margin-bottom: 5px;">
@@ -292,8 +293,9 @@ function ssr_admin_test_messages_render(){
 </tr>
 </tbody>
 </table>
-</div>';
-                            $message_content = isset($_POST['message_body']) ? wp_kses_post($_POST['message_body']) : $default_message;
+</div>
+HTML;
+                            $message_content = isset($_POST['message_body']) ? wp_kses_post(wp_unslash($_POST['message_body'])) : $default_message;
 
                             wp_editor(
                                 $message_content,

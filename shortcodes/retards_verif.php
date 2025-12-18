@@ -90,22 +90,12 @@ add_shortcode('retards_verif',function(){
 		// === Construction de $dates selon la règle métier
 		$dow = (int)(new DateTimeImmutable($date, $tz))->format('N'); // 1=lundi ... 7=dimanche
 
-		if (!empty($req)) {
-		  // Sélection explicite via ?date=YYYY-MM-DD
-		  if (in_array($dow, [3,6,7], true)) {
-			// Mercredi / Samedi / Dimanche => aucun élève
-			$dates = [];
-		  } else {
-			$dates = [ $date ];
-		  }
+		// === TOUJOURS utiliser la logique métier ===
+		if (function_exists('ssr_prev_days_for_check')) {
+			$dates = ssr_prev_days_for_check($date); // Passe la date sélectionnée
 		} else {
-		  // Vue par défaut (pas de ?date=) => logique multi-jours
-		  if (function_exists('ssr_prev_days_for_check')) {
-			$dates = ssr_prev_days_for_check(); // doit déjà renvoyer [] pour mer/sam/dim et mar+mer le jeudi
-		  } else {
 			// Filet de sécurité si la fonction n'existe pas
 			$dates = in_array($dow, [3,6,7], true) ? [] : [ $date ];
-		  }
 		}
 
 
