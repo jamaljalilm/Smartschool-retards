@@ -241,6 +241,9 @@ add_shortcode('liste_retenues', function() {
 		text-align: center;
 		position: relative;
 		color: #666;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	/* Afficher "à fixer" quand le champ est vide */
@@ -312,22 +315,71 @@ add_shortcode('liste_retenues', function() {
 		display: none;
 	}
 
-	/* Mobile */
-	@media (max-width: 640px) {
-		.ssr-retenues-table th,
-		.ssr-retenues-table td {
+	/* Tablette */
+	@media (max-width: 1024px) {
+		.ssr-badge-sanction {
 			font-size: 12px;
-			padding: 8px 4px;
+			padding: 5px 10px;
 		}
 
 		.ssr-date-sanction {
-			width: 100px;
+			width: 110px;
 			font-size: 12px;
 		}
 
 		.ssr-date-sanction.has-value {
-			width: 90px;
+			width: 100px;
 			font-size: 11px;
+		}
+	}
+
+	/* Mobile large */
+	@media (max-width: 768px) {
+		.ssr-badge-sanction {
+			font-size: 11px;
+			padding: 4px 8px;
+		}
+
+		.ssr-date-sanction {
+			width: 100px;
+			font-size: 11px;
+		}
+
+		.ssr-date-sanction.has-value {
+			width: 90px;
+			font-size: 10px;
+		}
+
+		.ssr-clear-date {
+			width: 22px;
+			height: 22px;
+			font-size: 13px;
+		}
+	}
+
+	/* Mobile */
+	@media (max-width: 640px) {
+		.ssr-retenues-table th,
+		.ssr-retenues-table td {
+			font-size: 11px;
+			padding: 8px 3px;
+		}
+
+		.ssr-badge-sanction {
+			font-size: 10px;
+			padding: 4px 7px;
+			white-space: nowrap;
+		}
+
+		.ssr-date-sanction {
+			width: 90px;
+			font-size: 10px;
+			padding: 5px 6px;
+		}
+
+		.ssr-date-sanction.has-value {
+			width: 80px;
+			font-size: 9px;
 		}
 
 		.ssr-clear-date {
@@ -338,6 +390,30 @@ add_shortcode('liste_retenues', function() {
 
 		.ssr-retenues-filters-date {
 			grid-template-columns: 1fr;
+		}
+	}
+
+	/* Très petit mobile */
+	@media (max-width: 480px) {
+		.ssr-badge-sanction {
+			font-size: 9px;
+			padding: 3px 6px;
+		}
+
+		.ssr-date-sanction {
+			width: 80px;
+			font-size: 9px;
+		}
+
+		.ssr-date-sanction.has-value {
+			width: 70px;
+			font-size: 8px;
+		}
+
+		.ssr-clear-date {
+			width: 18px;
+			height: 18px;
+			font-size: 11px;
 		}
 	}
 </style>
