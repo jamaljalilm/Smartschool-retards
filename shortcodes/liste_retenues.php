@@ -236,7 +236,7 @@ add_shortcode('liste_retenues', function() {
 		border-radius: 6px;
 		background: #f3f4f6;
 		font-size: 13px;
-		width: 90px;
+		width: 120px;
 		transition: all 0.2s;
 		text-align: center;
 		position: relative;
@@ -259,13 +259,13 @@ add_shortcode('liste_retenues', function() {
 		opacity: 1;
 	}
 
-	/* Quand une date est choisie, réduire pour laisser place à la croix */
+	/* Quand une date est choisie, agrandir pour laisser place à la croix */
 	.ssr-date-sanction.has-value {
 		background: #e8f7ee;
 		border-color: #2e7d32;
 		color: #222;
-		width: 120px;
-		font-size: 13px;
+		width: 105px;
+		font-size: 12px;
 	}
 
 	.ssr-date-sanction:focus {
@@ -320,12 +320,13 @@ add_shortcode('liste_retenues', function() {
 		}
 
 		.ssr-date-sanction {
-			width: 80px;
+			width: 100px;
 			font-size: 12px;
 		}
 
 		.ssr-date-sanction.has-value {
-			width: 100px;
+			width: 90px;
+			font-size: 11px;
 		}
 
 		.ssr-clear-date {
