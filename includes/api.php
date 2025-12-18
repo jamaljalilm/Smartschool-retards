@@ -360,6 +360,23 @@ if (!function_exists('ssr_fetch_retards_by_date')) {
 				$userIdent = isset($user['userIdentifier']) ? $user['userIdentifier'] :
 							(isset($user['accountCode']) ? $user['accountCode'] : $uid);
 
+				// Log pour debug : voir quel format est utilisé
+				if (function_exists('ssr_log')) {
+					$debug_info = "getUserDetailsByNumber($uid) returned: ";
+					$debug_info .= "userIdentifier=" . (isset($user['userIdentifier']) ? $user['userIdentifier'] : 'NOT SET');
+					$debug_info .= ", accountCode=" . (isset($user['accountCode']) ? $user['accountCode'] : 'NOT SET');
+					$debug_info .= ", using: " . $userIdent;
+					ssr_log($debug_info, 'info', 'api');
+				}
+
+				// Si le userIdent ne commence pas par INDL., l'ajouter
+				if (!empty($userIdent) && !preg_match('/^INDL\./i', $userIdent)) {
+					$userIdent = 'INDL.' . $userIdent;
+					if (function_exists('ssr_log')) {
+						ssr_log("Added INDL. prefix: " . $userIdent, 'info', 'api');
+					}
+				}
+
 				$ln = isset($user['naam']) ? $user['naam'] : '';
 				$fn = isset($user['voornaam']) ? $user['voornaam'] : '';
 
