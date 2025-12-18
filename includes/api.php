@@ -85,7 +85,7 @@ function ssr_api(string $method, array $params = []) {
         }
     }
 
-    // Appels avec ordre strict pour les méthodes qu’on utilise ici
+    // Appels avec ordre strict pour les méthodes qu'on utilise ici
     try {
         switch ($method) {
             case 'getAbsentsWithInternalNumberByDate': {
@@ -120,6 +120,58 @@ function ssr_api(string $method, array $params = []) {
                     $count = is_array($res) ? count($res) : 0;
                     ssr_log("SOAP response: " . ($res === null ? 'null' : (is_array($res) ? "$count items" : gettype($res))), 'info', 'api');
                 }
+
+                break;
+            }
+            case 'sendMsg': {
+                // Traitement spécial pour sendMsg
+                // Paramètres: [userIdentifier, title, body, senderIdentifier, attachments, coaccount, copyToLVS]
+                $userIdentifier = $params[0] ?? '';
+                $title = $params[1] ?? '';
+                $body = $params[2] ?? '';
+                $senderIdentifier = $params[3] ?? 'Null';
+                $attachments = $params[4] ?? null;
+                $coaccount = $params[5] ?? null;
+                $copyToLVS = $params[6] ?? false;
+
+                // Construire les paramètres SOAP
+                $soapParams = [$accesscode, $userIdentifier, $title, $body, $senderIdentifier];
+
+                // Ajouter attachments seulement si fourni
+                if ($attachments !== null) {
+                    $soapParams[] = $attachments;
+                } else {
+                    // Si on veut passer coaccount ou copyToLVS, il faut quand même passer attachments
+                    if ($coaccount !== null || $copyToLVS) {
+                        $soapParams[] = null;
+                    }
+                }
+
+                // Ajouter coaccount seulement si fourni ET différent de null
+                if ($coaccount !== null) {
+                    $soapParams[] = (int)$coaccount;
+                } elseif ($copyToLVS) {
+                    // Si copyToLVS=true mais coaccount=null, passer 0 (compte principal)
+                    $soapParams[] = 0;
+                }
+
+                // Ajouter copyToLVS seulement si true
+                if ($copyToLVS) {
+                    $soapParams[] = true;
+                }
+
+                // Log pour debug
+                if (function_exists('ssr_log')) {
+                    ssr_log("SOAP call sendMsg with params: " . json_encode([
+                        'userIdentifier' => $userIdentifier,
+                        'title' => $title,
+                        'senderIdentifier' => $senderIdentifier,
+                        'coaccount' => $coaccount,
+                        'copyToLVS' => $copyToLVS
+                    ]), 'info', 'api');
+                }
+
+                $res = $client->__soapCall($method, $soapParams);
 
                 break;
             }
