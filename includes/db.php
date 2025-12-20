@@ -119,3 +119,62 @@ function ssr_db_add_status_raw_column(){
         ssr_log("Colonne status_raw ajoutée à la table {$ver}", 'info', 'migration');
     }
 }
+
+/**
+ * Migration des anciens noms de colonnes vers les nouveaux
+ */
+function ssr_db_migrate_column_names(){
+    global $wpdb;
+    $ver = SSR_T_VERIF;
+
+    // Vérifier que la table existe
+    $table_exists = $wpdb->get_var($wpdb->prepare(
+        "SHOW TABLES LIKE %s",
+        $wpdb->esc_like($ver)
+    )) === $ver;
+
+    if (!$table_exists) {
+        return; // Table n'existe pas encore, pas besoin de migration
+    }
+
+    // Récupérer toutes les colonnes de la table
+    $columns = $wpdb->get_results($wpdb->prepare(
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = %s
+        AND TABLE_NAME = %s",
+        DB_NAME,
+        $ver
+    ), ARRAY_A);
+
+    $column_names = array_column($columns, 'COLUMN_NAME');
+
+    // Migration: date_jour -> date_retard
+    if (in_array('date_jour', $column_names) && !in_array('date_retard', $column_names)) {
+        $wpdb->query("ALTER TABLE `{$ver}` CHANGE `date_jour` `date_retard` DATE NOT NULL");
+        ssr_log("Colonne date_jour renommée en date_retard", 'info', 'migration');
+    }
+
+    // Migration: lastname -> last_name
+    if (in_array('lastname', $column_names) && !in_array('last_name', $column_names)) {
+        $wpdb->query("ALTER TABLE `{$ver}` CHANGE `lastname` `last_name` VARCHAR(191) NULL");
+        ssr_log("Colonne lastname renommée en last_name", 'info', 'migration');
+    }
+
+    // Migration: firstname -> first_name
+    if (in_array('firstname', $column_names) && !in_array('first_name', $column_names)) {
+        $wpdb->query("ALTER TABLE `{$ver}` CHANGE `firstname` `first_name` VARCHAR(191) NULL");
+        ssr_log("Colonne firstname renommée en first_name", 'info', 'migration');
+    }
+
+    // Migration: verified_by_id -> verified_by_code
+    if (in_array('verified_by_id', $column_names) && !in_array('verified_by_code', $column_names)) {
+        $wpdb->query("ALTER TABLE `{$ver}` CHANGE `verified_by_id` `verified_by_code` VARCHAR(64) NULL");
+        ssr_log("Colonne verified_by_id renommée en verified_by_code", 'info', 'migration');
+    }
+
+    // Ajouter verified_at si elle n'existe pas
+    if (!in_array('verified_at', $column_names)) {
+        $wpdb->query("ALTER TABLE `{$ver}` ADD COLUMN `verified_at` DATETIME NULL AFTER `first_name`");
+        ssr_log("Colonne verified_at ajoutée à la table {$ver}", 'info', 'migration');
+    }
+}
