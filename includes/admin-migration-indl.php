@@ -41,23 +41,52 @@ function ssr_add_indl_prefix_to_all_identifiers() {
         ");
 
         if ($count_without_prefix > 0) {
-            // Mettre à jour tous les user_identifier sans préfixe
-            $updated = $wpdb->query("
-                UPDATE `{$table}`
-                SET user_identifier = CONCAT('INDL.', user_identifier)
-                WHERE user_identifier NOT LIKE 'INDL.%'
-                AND user_identifier IS NOT NULL
-                AND user_identifier != ''
-            ");
+            // Pour la table verif, gérer les contraintes d'unicité
+            if ($table_name === 'verif') {
+                // Désactiver temporairement les contraintes d'unicité
+                $wpdb->query("ALTER TABLE `{$table}` DROP INDEX `uniq_user_day`");
+
+                // Mettre à jour tous les user_identifier sans préfixe
+                $updated = $wpdb->query("
+                    UPDATE `{$table}`
+                    SET user_identifier = CONCAT('INDL.', user_identifier)
+                    WHERE user_identifier NOT LIKE 'INDL.%'
+                    AND user_identifier IS NOT NULL
+                    AND user_identifier != ''
+                ");
+
+                // Supprimer les doublons potentiels (garder le plus récent)
+                $wpdb->query("
+                    DELETE v1 FROM `{$table}` v1
+                    INNER JOIN `{$table}` v2
+                    WHERE v1.user_identifier = v2.user_identifier
+                    AND v1.date_retard = v2.date_retard
+                    AND v1.id < v2.id
+                ");
+
+                // Recréer la contrainte d'unicité
+                $wpdb->query("ALTER TABLE `{$table}` ADD UNIQUE KEY `uniq_user_day` (`user_identifier`, `date_retard`)");
+            } else {
+                // Pour les autres tables, UPDATE simple
+                $updated = $wpdb->query("
+                    UPDATE `{$table}`
+                    SET user_identifier = CONCAT('INDL.', user_identifier)
+                    WHERE user_identifier NOT LIKE 'INDL.%'
+                    AND user_identifier IS NOT NULL
+                    AND user_identifier != ''
+                ");
+            }
+
+            $actual_updated = $updated !== false ? intval($updated) : 0;
 
             $results[$table_name] = [
                 'exists' => true,
-                'updated' => $updated !== false ? $updated : 0,
-                'message' => "Mis à jour {$updated} enregistrement(s)"
+                'updated' => $actual_updated,
+                'message' => "Mis à jour " . $actual_updated . " enregistrement(s)"
             ];
 
             ssr_log(
-                "Préfixe INDL. ajouté à {$updated} enregistrements dans la table {$table}",
+                "Préfixe INDL. ajouté à " . $actual_updated . " enregistrements dans la table {$table}",
                 'info',
                 'migration'
             );
