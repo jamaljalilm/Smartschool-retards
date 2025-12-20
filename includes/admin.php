@@ -104,6 +104,15 @@ function ssr_admin_page_render(){
             $saved = true;
         }
 
+        // Réglages retenues (double comptage AM+PM)
+        if (isset($_POST['ssr_retenues_save'])) {
+            check_admin_referer('ssr_retenues_save', 'ssr_retenues_nonce');
+            $double_count = !empty($_POST['double_count_ampm']) ? '1' : '0';
+            update_option(SSR_OPT_DOUBLE_COUNT_AMPM, $double_count);
+            echo '<div class="updated"><p>Options retenues sauvegardées ✅</p></div>';
+            $saved = true;
+        }
+
         // Ajouter / Mettre à jour un vérificateur
         if (isset($_POST['ssr_verifier_save'])) {
             check_admin_referer('ssr_verifier_save', 'ssr_verifier_nonce');
@@ -167,6 +176,7 @@ function ssr_admin_page_render(){
     $legacy_url        = ssr_get_option(SSR_OPT_SOAP_URL, '');
     $legacy_accesscode = ssr_get_option(SSR_OPT_SOAP_ACCESSCODE, '');
     $legacy_hours      = ssr_get_option(SSR_OPT_SOAP_HOURS, '13:15');
+    $double_count_ampm = get_option(SSR_OPT_DOUBLE_COUNT_AMPM, '0');
 
     // Liste des vérificateurs
     $rows = $wpdb->get_results("SELECT * FROM " . SSR_T_VERIFIERS . " ORDER BY display_name ASC", ARRAY_A);
@@ -326,6 +336,33 @@ function ssr_admin_page_render(){
               <td>
                 <textarea id="blanks" name="blanks" rows="6" cols="50" class="large-text code" placeholder="YYYY-MM-DD&#10"><?php echo esc_textarea($cal['blanks']); ?></textarea>
                 <p class="description">Journées sans contrôle (masquées). Une date par ligne, format <code>YYYY-MM-DD</code>.</p>
+              </td>
+            </tr>
+          </table>
+
+          <?php submit_button('Enregistrer'); ?>
+        </form>
+      </div>
+
+      <!-- Encadré: Retenues et double comptage -->
+      <div class="ssr-box">
+        <h2>Retenues — Double comptage AM+PM</h2>
+        <form method="post">
+          <?php wp_nonce_field('ssr_retenues_save','ssr_retenues_nonce'); ?>
+          <input type="hidden" name="ssr_retenues_save" value="1"/>
+
+          <table class="form-table">
+            <tr>
+              <th>Double comptage AM+PM</th>
+              <td>
+                <label>
+                  <input type="checkbox" name="double_count_ampm" value="1" <?php checked('1', $double_count_ampm); ?>/>
+                  Compter les retards AM+PM comme 2 absences au lieu de 1
+                </label>
+                <p class="description">
+                  Si activé, les élèves qui sont en retard le matin ET l'après-midi le même jour et qui ne se présentent pas au vérificateur
+                  verront leur retard compter pour 2 absences au lieu de 1 dans le calcul des sanctions.
+                </p>
               </td>
             </tr>
           </table>

@@ -149,6 +149,7 @@ add_shortcode('retards_verif',function(){
                 $class = sanitize_text_field($_POST['class'][$key] ?? '');
                 $ln    = sanitize_text_field($_POST['ln'][$key] ?? '');
                 $fn    = sanitize_text_field($_POST['fn'][$key] ?? '');
+                $status_raw = sanitize_text_field($_POST['status_raw'][$key] ?? '');
                 $new   = ($val==='present') ? 'present' : 'absent';
 
                 $prev = $wpdb->get_row($wpdb->prepare("
@@ -166,6 +167,7 @@ add_shortcode('retards_verif',function(){
                     'first_name'      => $fn,
                     'date_retard'     => $d,
                     'status'          => $new,
+                    'status_raw'      => $status_raw,
                     'verified_at'     => $now,
                     'verified_by_code'=> (string)$verifier_id,
                     'verified_by_name'=> (string)$verifier_name
@@ -582,6 +584,7 @@ table.ssr-table > tbody > tr:hover > th {
 						<input type="hidden" name="class[<?php echo $key; ?>]" value="<?php echo esc_attr($row['class_code'] ?? ''); ?>">
 						<input type="hidden" name="ln[<?php echo $key; ?>]" value="<?php echo esc_attr($row['last_name'] ?? ''); ?>">
 						<input type="hidden" name="fn[<?php echo $key; ?>]" value="<?php echo esc_attr($row['first_name'] ?? ''); ?>">
+						<input type="hidden" name="status_raw[<?php echo $key; ?>]" value="<?php echo esc_attr($row['status_raw'] ?? ''); ?>">
 					<?php endforeach; ?>
                 </tbody>
             </table>

@@ -26,16 +26,18 @@ function ssr_db_maybe_create_tables(){
         id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         user_identifier VARCHAR(64) NOT NULL,
         class_code VARCHAR(64) NULL,
-        date_jour DATE NOT NULL,
+        date_retard DATE NOT NULL,
         status ENUM('present','absent','late') NOT NULL DEFAULT 'present',
-        lastname VARCHAR(191) NULL,
-        firstname VARCHAR(191) NULL,
-        verified_by_id VARCHAR(64) NULL,
+        status_raw VARCHAR(10) NULL COMMENT 'AM, PM ou AM+PM',
+        last_name VARCHAR(191) NULL,
+        first_name VARCHAR(191) NULL,
+        verified_at DATETIME NULL,
+        verified_by_code VARCHAR(64) NULL,
         verified_by_name VARCHAR(191) NULL,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME NULL,
-        UNIQUE KEY uniq_user_day (user_identifier, date_jour),
-        KEY idx_class_day (class_code, date_jour),
+        UNIQUE KEY uniq_user_day (user_identifier, date_retard),
+        KEY idx_class_day (class_code, date_retard),
         PRIMARY KEY(id)
     ) $charset;";
 
@@ -92,4 +94,28 @@ function ssr_log($message, $level='info', $context=null){
         'context' => $context ? sanitize_text_field($context) : null,
         'message' => wp_strip_all_tags((string)$message),
     ], ['%s','%s','%s']);
+}
+
+/**
+ * Ajoute le champ status_raw à la table de vérification si nécessaire
+ */
+function ssr_db_add_status_raw_column(){
+    global $wpdb;
+    $ver = SSR_T_VERIF;
+
+    // Vérifier si la colonne existe déjà
+    $column_exists = $wpdb->get_results($wpdb->prepare(
+        "SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = %s
+        AND TABLE_NAME = %s
+        AND COLUMN_NAME = 'status_raw'",
+        DB_NAME,
+        $ver
+    ));
+
+    if (empty($column_exists)) {
+        // Ajouter la colonne
+        $wpdb->query("ALTER TABLE `{$ver}` ADD COLUMN `status_raw` VARCHAR(10) NULL COMMENT 'AM, PM ou AM+PM' AFTER `status`");
+        ssr_log("Colonne status_raw ajoutée à la table {$ver}", 'info', 'migration');
+    }
 }

@@ -33,6 +33,7 @@ if (!defined('SSR_OPT_SOAP_HOURS'))      define('SSR_OPT_SOAP_HOURS',      'hour
 
 /* ===================== Divers ===================== */
 if (!defined('SSR_OPT_PIN_HASH')) define('SSR_OPT_PIN_HASH', 'ssr_verif_pin_hash'); // si encore utilisé quelque part
+if (!defined('SSR_OPT_DOUBLE_COUNT_AMPM')) define('SSR_OPT_DOUBLE_COUNT_AMPM', 'ssr_double_count_ampm'); // double comptage AM+PM
 
 /* ===================== Cron ===================== */
 if (!defined('SSR_CRON_HOOK')) define('SSR_CRON_HOOK', 'ssr_daily_notifications_event');

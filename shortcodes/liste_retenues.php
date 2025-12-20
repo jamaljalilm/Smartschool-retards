@@ -135,21 +135,43 @@ add_shortcode('liste_retenues', function() {
 	$verifier = function_exists('ssr_current_verifier') ? ssr_current_verifier() : null;
 	$verifier_name = $verifier['name'] ?? '';
 
-	// Compte les absences par élève jusqu'à aujourd'hui (EXACTEMENT comme recap_retards ligne 108)
-	$query = $wpdb->prepare("
-		SELECT
-			user_identifier,
-			MAX(first_name) as firstname,
-			MAX(last_name) as lastname,
-			MAX(class_code) as class_code,
-			COUNT(*) as nb_absences
-		FROM {$ver}
-		WHERE status = 'absent'
-		  AND date_retard <= %s
-		GROUP BY user_identifier
-		HAVING nb_absences >= 5
-		ORDER BY MAX(class_code) ASC, MAX(last_name) ASC, MAX(first_name) ASC
-	", $today);
+	// Vérifier si le double comptage AM+PM est activé
+	$double_count_ampm = get_option(SSR_OPT_DOUBLE_COUNT_AMPM, '0');
+
+	// Compte les absences par élève jusqu'à aujourd'hui
+	if ($double_count_ampm === '1') {
+		// Avec double comptage : les retards AM+PM comptent pour 2
+		$query = $wpdb->prepare("
+			SELECT
+				user_identifier,
+				MAX(first_name) as firstname,
+				MAX(last_name) as lastname,
+				MAX(class_code) as class_code,
+				SUM(CASE WHEN status_raw = 'AM+PM' THEN 2 ELSE 1 END) as nb_absences
+			FROM {$ver}
+			WHERE status = 'absent'
+			  AND date_retard <= %s
+			GROUP BY user_identifier
+			HAVING nb_absences >= 5
+			ORDER BY MAX(class_code) ASC, MAX(last_name) ASC, MAX(first_name) ASC
+		", $today);
+	} else {
+		// Sans double comptage : comptage normal
+		$query = $wpdb->prepare("
+			SELECT
+				user_identifier,
+				MAX(first_name) as firstname,
+				MAX(last_name) as lastname,
+				MAX(class_code) as class_code,
+				COUNT(*) as nb_absences
+			FROM {$ver}
+			WHERE status = 'absent'
+			  AND date_retard <= %s
+			GROUP BY user_identifier
+			HAVING nb_absences >= 5
+			ORDER BY MAX(class_code) ASC, MAX(last_name) ASC, MAX(first_name) ASC
+		", $today);
+	}
 
 	$students = $wpdb->get_results($query, ARRAY_A);
 

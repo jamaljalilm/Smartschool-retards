@@ -46,8 +46,12 @@ register_deactivation_hook(__FILE__, 'ssr_deactivate_segmented');
 
 function ssr_activate_segmented(){
     ssr_db_maybe_create_tables();
+    ssr_db_add_status_raw_column();
     ssr_cron_maybe_reschedule_daily();
 }
+
+// Exécuter la migration aussi lors du chargement de l'admin (au cas où)
+add_action('admin_init', 'ssr_db_add_status_raw_column');
 
 function ssr_deactivate_segmented(){
     $hook = SSR_CRON_HOOK;
