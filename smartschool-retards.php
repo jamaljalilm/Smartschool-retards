@@ -28,6 +28,7 @@ require_once SSR_INC_DIR . 'admin-message-test.php';
 require_once SSR_INC_DIR . 'admin-daily-message-config.php';
 require_once SSR_INC_DIR . 'admin-message-history.php';
 require_once SSR_INC_DIR . 'admin-view-logs.php';
+require_once SSR_INC_DIR . 'admin-migration.php';
 require_once SSR_INC_DIR . 'admin.php';
 
 // Load shortcodes (each file registers its own shortcode tag)
