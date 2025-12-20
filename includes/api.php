@@ -226,9 +226,15 @@ function ssr_normalize_retards_rows(array $resp, string $date): array {
 
         $status_raw = $hasR_AM && $hasR_PM ? 'AM+PM' : ($hasR_AM ? 'AM' : 'PM');
 
+        // S'assurer que l'identifiant a le préfixe INDL.
+        $user_id = (string)$uid;
+        if (!empty($user_id) && !preg_match('/^INDL\./i', $user_id)) {
+            $user_id = 'INDL.' . $user_id;
+        }
+
         $out[] = [
-            'userIdentifier' => (string)$uid,
-            'class_code'     => '', // pas d’enrichissement ici (base sûre)
+            'userIdentifier' => $user_id,
+            'class_code'     => '', // pas d'enrichissement ici (base sûre)
             'last_name'      => '',
             'first_name'     => '',
             'date_retard'    => $date,
