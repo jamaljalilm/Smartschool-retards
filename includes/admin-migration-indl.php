@@ -26,8 +26,10 @@ function ssr_add_indl_prefix_to_all_identifiers() {
             $results[$table_name] = [
                 'exists' => false,
                 'updated' => 0,
+                'deleted' => 0,
                 'message' => "Table n'existe pas"
             ];
+            ssr_log("Table {$table} n'existe pas", 'warning', 'migration');
             continue;
         }
 
@@ -40,13 +42,50 @@ function ssr_add_indl_prefix_to_all_identifiers() {
             AND user_identifier != ''
         ");
 
-        if ($count_without_prefix > 0) {
-            // Pour la table verif, gérer les contraintes d'unicité
-            if ($table_name === 'verif') {
-                // Désactiver temporairement les contraintes d'unicité
-                $wpdb->query("ALTER TABLE `{$table}` DROP INDEX `uniq_user_day`");
+        ssr_log("Table {$table}: {$count_without_prefix} enregistrements sans préfixe INDL.", 'info', 'migration');
 
-                // Mettre à jour tous les user_identifier sans préfixe
+        if ($count_without_prefix > 0) {
+            $deleted = 0;
+
+            // Pour la table verif, gérer les doublons potentiels AVANT l'UPDATE
+            if ($table_name === 'verif') {
+                // Étape 1: Identifier et supprimer les enregistrements qui créeraient des doublons
+                // On garde ceux qui ont déjà INDL., on supprime ceux qui ne l'ont pas
+                $deleted = $wpdb->query("
+                    DELETE v1 FROM `{$table}` v1
+                    INNER JOIN `{$table}` v2
+                    ON CONCAT('INDL.', v1.user_identifier) = v2.user_identifier
+                    AND v1.date_retard = v2.date_retard
+                    WHERE v1.user_identifier NOT LIKE 'INDL.%'
+                ");
+
+                $deleted = $deleted !== false ? intval($deleted) : 0;
+
+                if ($deleted > 0) {
+                    ssr_log("Supprimé {$deleted} doublons potentiels dans {$table}", 'info', 'migration');
+                }
+
+                // Étape 2: Vérifier si l'index unique existe
+                $index_exists = $wpdb->get_var("
+                    SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.STATISTICS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                    AND TABLE_NAME = '{$table}'
+                    AND INDEX_NAME = 'uniq_user_day'
+                ");
+
+                if ($index_exists) {
+                    ssr_log("Index uniq_user_day existe, suppression temporaire...", 'info', 'migration');
+                    $drop_result = $wpdb->query("ALTER TABLE `{$table}` DROP INDEX `uniq_user_day`");
+
+                    if ($drop_result === false) {
+                        ssr_log("ERREUR lors de la suppression de l'index: " . $wpdb->last_error, 'error', 'migration');
+                    } else {
+                        ssr_log("Index supprimé avec succès", 'info', 'migration');
+                    }
+                }
+
+                // Étape 3: Mettre à jour tous les user_identifier sans préfixe
                 $updated = $wpdb->query("
                     UPDATE `{$table}`
                     SET user_identifier = CONCAT('INDL.', user_identifier)
@@ -55,7 +94,13 @@ function ssr_add_indl_prefix_to_all_identifiers() {
                     AND user_identifier != ''
                 ");
 
-                // Supprimer les doublons potentiels (garder le plus récent)
+                if ($updated === false) {
+                    ssr_log("ERREUR lors de l'UPDATE: " . $wpdb->last_error, 'error', 'migration');
+                } else {
+                    ssr_log("UPDATE réussi: {$updated} lignes affectées", 'info', 'migration');
+                }
+
+                // Étape 4: Supprimer tout doublon restant (au cas où)
                 $wpdb->query("
                     DELETE v1 FROM `{$table}` v1
                     INNER JOIN `{$table}` v2
@@ -64,8 +109,19 @@ function ssr_add_indl_prefix_to_all_identifiers() {
                     AND v1.id < v2.id
                 ");
 
-                // Recréer la contrainte d'unicité
-                $wpdb->query("ALTER TABLE `{$table}` ADD UNIQUE KEY `uniq_user_day` (`user_identifier`, `date_retard`)");
+                // Étape 5: Recréer la contrainte d'unicité si elle a été supprimée
+                if ($index_exists) {
+                    $add_result = $wpdb->query("
+                        ALTER TABLE `{$table}`
+                        ADD UNIQUE KEY `uniq_user_day` (`user_identifier`, `date_retard`)
+                    ");
+
+                    if ($add_result === false) {
+                        ssr_log("ERREUR lors de la recréation de l'index: " . $wpdb->last_error, 'error', 'migration');
+                    } else {
+                        ssr_log("Index recréé avec succès", 'info', 'migration');
+                    }
+                }
             } else {
                 // Pour les autres tables, UPDATE simple
                 $updated = $wpdb->query("
@@ -75,6 +131,10 @@ function ssr_add_indl_prefix_to_all_identifiers() {
                     AND user_identifier IS NOT NULL
                     AND user_identifier != ''
                 ");
+
+                if ($updated === false) {
+                    ssr_log("ERREUR lors de l'UPDATE sur {$table}: " . $wpdb->last_error, 'error', 'migration');
+                }
             }
 
             $actual_updated = $updated !== false ? intval($updated) : 0;
@@ -82,11 +142,14 @@ function ssr_add_indl_prefix_to_all_identifiers() {
             $results[$table_name] = [
                 'exists' => true,
                 'updated' => $actual_updated,
-                'message' => "Mis à jour " . $actual_updated . " enregistrement(s)"
+                'deleted' => $deleted,
+                'message' => "Mis à jour " . $actual_updated . " enregistrement(s)" .
+                           ($deleted > 0 ? ", supprimé {$deleted} doublon(s)" : "")
             ];
 
             ssr_log(
-                "Préfixe INDL. ajouté à " . $actual_updated . " enregistrements dans la table {$table}",
+                "Préfixe INDL. ajouté à " . $actual_updated . " enregistrements dans la table {$table}" .
+                ($deleted > 0 ? " ({$deleted} doublons supprimés)" : ""),
                 'info',
                 'migration'
             );
@@ -94,6 +157,7 @@ function ssr_add_indl_prefix_to_all_identifiers() {
             $results[$table_name] = [
                 'exists' => true,
                 'updated' => 0,
+                'deleted' => 0,
                 'message' => "Tous les identifiants ont déjà le préfixe INDL."
             ];
         }
@@ -267,7 +331,7 @@ function ssr_admin_migration_indl_render() {
             if (!$result['exists']) {
                 echo '<td>❌</td>';
                 echo '<td>' . esc_html($result['message']) . '</td>';
-            } elseif ($result['updated'] > 0) {
+            } elseif ($result['updated'] > 0 || $result['deleted'] > 0) {
                 echo '<td>✅</td>';
                 echo '<td style="color: #2e7d32; font-weight: 600;">' . esc_html($result['message']) . '</td>';
             } else {
