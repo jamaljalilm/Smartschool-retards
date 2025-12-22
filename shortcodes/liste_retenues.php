@@ -40,7 +40,12 @@ add_action('wp_ajax_ssr_save_sanction_date', function() {
 
 	$now = current_time('mysql');
 
+	$should_send_notification = false;
+
 	if ($existing) {
+		// Sauvegarder l'ancien nombre d'absences pour détecter un franchissement de seuil
+		$old_nb_absences = intval($existing->nb_absences ?? 0);
+
 		// Mettre à jour
 		$wpdb->update(
 			$sanctions_table,
@@ -71,6 +76,11 @@ add_action('wp_ajax_ssr_save_sanction_date', function() {
 				'sanctions'
 			);
 		}
+
+		// Vérifier si un nouveau seuil est franchi (envoyer notification automatique)
+		if (function_exists('ssr_is_new_sanction_threshold') && ssr_is_new_sanction_threshold($old_nb_absences, $nb_absences)) {
+			$should_send_notification = true;
+		}
 	} else {
 		// Insérer
 		$wpdb->insert(
@@ -97,6 +107,42 @@ add_action('wp_ajax_ssr_save_sanction_date', function() {
 				'info',
 				'sanctions'
 			);
+		}
+
+		// Nouvelle sanction = envoyer notification automatique
+		$should_send_notification = true;
+	}
+
+	// Envoyer le message automatique si nécessaire
+	if ($should_send_notification && function_exists('ssr_send_sanction_notification')) {
+		// Vérifier que l'envoi automatique est activé
+		$auto_send_enabled = get_option('ssr_sanction_auto_send', '1');
+
+		if ($auto_send_enabled === '1') {
+			$notification_data = [
+				'user_identifier' => $user_identifier,
+				'first_name' => $firstname,
+				'last_name' => $lastname,
+				'nb_absences' => $nb_absences,
+				'sanction_type' => $sanction_type,
+				'is_new_sanction' => !$existing,
+			];
+
+			$send_result = ssr_send_sanction_notification($notification_data);
+
+			if (is_wp_error($send_result)) {
+				ssr_log(
+					"Échec envoi notification automatique pour {$firstname} {$lastname}: " . $send_result->get_error_message(),
+					'warning',
+					'sanctions'
+				);
+			} else {
+				ssr_log(
+					"Notification automatique envoyée pour {$firstname} {$lastname} ({$user_identifier}): {$sanction_type}",
+					'info',
+					'sanctions'
+				);
+			}
 		}
 	}
 
