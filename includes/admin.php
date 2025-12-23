@@ -492,6 +492,103 @@ function ssr_admin_test_function_render() {
 	echo '</form>';
 	echo '</div>';
 
+	// Section Diagnostic Cron / Messages
+	echo '<div style="background:#fff;border:1px solid #ccd0d4;border-radius:4px;padding:15px;margin:20px 0;">';
+	echo '<h2 style="margin-top:0;">📤 Diagnostic des Messages Quotidiens</h2>';
+
+	// 1. Mode test
+	$test_mode = get_option(SSR_OPT_TESTMODE, '0');
+	$is_test = ($test_mode === '1' || $test_mode === 1 || $test_mode === true);
+
+	echo '<table class="widefat" style="margin-top:10px;">';
+	echo '<tr><td style="width:50%;"><strong>Mode test</strong><br><small>Si activé, AUCUN message n\'est envoyé</small></td><td>';
+	if ($is_test) {
+		echo '<span style="color:red;font-weight:bold;">❌ ACTIVÉ (messages BLOQUÉS)</span>';
+		echo '<br><small>→ Allez dans <a href="' . admin_url('admin.php?page=ssr-settings') . '">Réglages</a> pour désactiver</small>';
+	} else {
+		echo '<span style="color:green;font-weight:bold;">✅ DÉSACTIVÉ (envoi autorisé)</span>';
+	}
+	echo '</td></tr>';
+
+	// 2. Cron planifié
+	$next_cron = wp_next_scheduled(SSR_CRON_HOOK);
+	echo '<tr><td><strong>Prochaine exécution</strong><br><small>Quand le cron va s\'exécuter</small></td><td>';
+	if ($next_cron) {
+		$tz = wp_timezone();
+		$dt = new DateTime('@' . $next_cron);
+		$dt->setTimezone($tz);
+		echo '<strong style="color:#0073aa;">' . $dt->format('d/m/Y à H:i:s') . '</strong>';
+		$diff = $next_cron - time();
+		if ($diff > 0) {
+			echo '<br><small>→ Dans ' . human_time_diff($next_cron) . '</small>';
+		} else {
+			echo '<br><small style="color:orange;">→ En retard de ' . human_time_diff($next_cron) . '</small>';
+		}
+	} else {
+		echo '<span style="color:red;font-weight:bold;">❌ PAS PLANIFIÉ !</span>';
+		echo '<br><small>→ Le cron n\'est pas actif. Décochez/recochez "Mode test" pour le réactiver.</small>';
+	}
+	echo '</td></tr>';
+
+	// 3. Heure configurée
+	$cron_time = get_option(SSR_OPT_DAILY_HHMM, '13:15');
+	echo '<tr><td><strong>Heure configurée</strong><br><small>Heure d\'envoi quotidien</small></td><td>';
+	echo '<strong style="font-size:18px;color:#0073aa;">' . esc_html($cron_time) . '</strong>';
+	echo '</td></tr>';
+
+	// 4. Destinataires
+	$send_student = get_option('ssr_daily_send_to_student', '1');
+	$send_parents = get_option('ssr_daily_send_to_parents', '1');
+	echo '<tr><td><strong>Destinataires</strong><br><small>À qui les messages sont envoyés</small></td><td>';
+	$recipients = [];
+	if ($send_student === '1') $recipients[] = '✅ Élèves';
+	else $recipients[] = '❌ Élèves';
+	if ($send_parents === '1') $recipients[] = '✅ Parents';
+	else $recipients[] = '❌ Parents';
+	echo implode(' • ', $recipients);
+	echo '</td></tr>';
+
+	echo '</table>';
+
+	// Bouton test manuel
+	echo '<div style="background:#e7f3ff;border-left:4px solid #0073aa;padding:12px;margin-top:15px;">';
+	echo '<strong>🧪 Test manuel</strong><br>';
+	echo '<p>Cliquez sur ce bouton pour exécuter le cron MAINTENANT et voir les logs en temps réel :</p>';
+	echo '<a href="' . admin_url('admin.php?page=ssr-test-fonction&ssr_cron_run_now=1') . '" class="button button-secondary">▶️ Exécuter le cron maintenant</a>';
+	echo '<p style="margin-top:10px;"><small>⚠️ Attention : Si le mode test est désactivé, cela enverra de VRAIS messages !</small></p>';
+	echo '</div>';
+
+	// Logs récents
+	global $wpdb;
+	$log_table = SSR_T_LOG;
+	$recent_logs = $wpdb->get_results($wpdb->prepare(
+		"SELECT created_at, level, context, message
+		 FROM $log_table
+		 WHERE context = 'cron'
+		 ORDER BY created_at DESC
+		 LIMIT 10"
+	), ARRAY_A);
+
+	if (!empty($recent_logs)) {
+		echo '<h3 style="margin-top:20px;">📋 Logs récents (cron) :</h3>';
+		echo '<table class="widefat striped" style="margin-top:10px;">';
+		echo '<thead><tr><th>Date</th><th>Niveau</th><th>Message</th></tr></thead>';
+		echo '<tbody>';
+		foreach ($recent_logs as $log) {
+			$level_color = $log['level'] === 'error' ? 'red' : ($log['level'] === 'warning' ? 'orange' : 'green');
+			echo '<tr>';
+			echo '<td style="white-space:nowrap;">' . esc_html($log['created_at']) . '</td>';
+			echo '<td style="color:' . $level_color . ';font-weight:bold;">' . esc_html($log['level']) . '</td>';
+			echo '<td>' . esc_html($log['message']) . '</td>';
+			echo '</tr>';
+		}
+		echo '</tbody></table>';
+	} else {
+		echo '<p style="margin-top:15px;"><em>Aucun log de cron trouvé.</em></p>';
+	}
+
+	echo '</div>';
+
 	// Vérifie si la fonction existe
 	if (function_exists('ssr_verification_date_for_retard')) {
 		echo '<div class="notice notice-success"><p style="font-size:16px;"><strong>✅ La fonction existe !</strong></p></div>';
