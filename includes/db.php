@@ -93,29 +93,3 @@ function ssr_log($message, $level='info', $context=null){
         'message' => wp_strip_all_tags((string)$message),
     ], ['%s','%s','%s']);
 }
-
-/**
- * Ajoute la colonne date_verification si elle n'existe pas
- */
-function ssr_add_date_verification_column(){
-    global $wpdb;
-    $table = SSR_T_VERIF;
-
-    // Vérifie si la colonne existe déjà
-    $column_exists = $wpdb->get_results(
-        $wpdb->prepare(
-            "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-             WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = 'date_verification'",
-            DB_NAME,
-            $table
-        )
-    );
-
-    if (empty($column_exists)) {
-        // Ajoute la colonne
-        $wpdb->query(
-            "ALTER TABLE `$table` ADD COLUMN `date_verification` DATE NULL AFTER `date_retard`"
-        );
-        ssr_log('Colonne date_verification ajoutée à la table ' . $table, 'info', 'db-migration');
-    }
-}

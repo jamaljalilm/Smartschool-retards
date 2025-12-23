@@ -42,16 +42,12 @@ require_once SSR_SC_DIR . 'ssr_suivi.php';
 require_once SSR_SC_DIR . 'retards_verif.php';
 require_once SSR_SC_DIR . 'liste_retenues.php';
 
-// Migration: Ajoute la colonne date_verification si nécessaire
-add_action('plugins_loaded', 'ssr_add_date_verification_column');
-
 // Activation / deactivation hooks
 register_activation_hook(__FILE__, 'ssr_activate_segmented');
 register_deactivation_hook(__FILE__, 'ssr_deactivate_segmented');
 
 function ssr_activate_segmented(){
     ssr_db_maybe_create_tables();
-    ssr_add_date_verification_column(); // Ajoute la colonne date_verification
     ssr_cron_maybe_reschedule_daily();
 }
 
