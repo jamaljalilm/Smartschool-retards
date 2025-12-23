@@ -86,17 +86,8 @@ add_shortcode('retards_verif',function(){
 	$verifier_name = $verifier['name'] ?? '';
 
     $message = "";
+    $saved_dates = []; // Initialize before POST handling
 
-		// === Construction de $dates selon la règle métier
-		$dow = (int)(new DateTimeImmutable($date, $tz))->format('N'); // 1=lundi ... 7=dimanche
-
-		// === TOUJOURS utiliser la logique métier ===
-		if (function_exists('ssr_prev_days_for_check')) {
-			$dates = ssr_prev_days_for_check($date); // Passe la date sélectionnée
-		} else {
-			// Filet de sécurité si la fonction n'existe pas
-			$dates = in_array($dow, [3,6,7], true) ? [] : [ $date ];
-		}
 
 
 
@@ -151,6 +142,11 @@ add_shortcode('retards_verif',function(){
                 $fn    = sanitize_text_field($_POST['fn'][$key] ?? '');
                 $new   = ($val==='present') ? 'present' : 'absent';
 
+                // Track this date for display refresh
+                if (!in_array($d, $saved_dates, true)) {
+                    $saved_dates[] = $d;
+                }
+
                 $prev = $wpdb->get_row($wpdb->prepare("
                     SELECT status, verified_at FROM `$ver`
                     WHERE user_identifier=%s AND date_retard=%s
@@ -193,6 +189,25 @@ add_shortcode('retards_verif',function(){
             $message = "<div style='padding:10px;margin:10px 0;background:#e8f7ee;color:#0a7a33;border-radius:6px;'>"
                      . "✅ Retards enregistrés par <strong>".esc_html($verifier_name)."</strong> le "
                      . esc_html(date_i18n('Y-m-d à H:i:s')) . "</div>";
+        }
+    }
+
+    // === Construction de $dates selon la règle métier ===
+    $dow = (int)(new DateTimeImmutable($date, $tz))->format('N'); // 1=lundi ... 7=dimanche
+
+    if (function_exists('ssr_prev_days_for_check')) {
+        $dates = ssr_prev_days_for_check($date); // Passe la date sélectionnée
+    } else {
+        // Filet de sécurité si la fonction n'existe pas
+        $dates = in_array($dow, [3,6,7], true) ? [] : [ $date ];
+    }
+
+    // === Après un POST, fusionner les dates enregistrées pour affichage ===
+    if (!empty($saved_dates)) {
+        foreach ($saved_dates as $sd) {
+            if (!in_array($sd, $dates, true)) {
+                $dates[] = $sd;
+            }
         }
     }
 
