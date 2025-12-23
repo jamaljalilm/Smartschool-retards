@@ -76,8 +76,11 @@ if (!function_exists('ssr_send_sanction_notification')) {
 
         // Envoyer à l'élève
         if ($send_to_student === '1' && function_exists('ssr_api_send_message')) {
-            // Préfixer avec INDL. comme pour les messages quotidiens
-            $student_identifier = 'INDL.' . $user_identifier;
+            // Préfixer avec INDL. si nécessaire (comme dans api.php)
+            $student_identifier = $user_identifier;
+            if (!preg_match('/^INDL\./i', $student_identifier)) {
+                $student_identifier = 'INDL.' . $student_identifier;
+            }
 
             $result = ssr_api_send_message(
                 $student_identifier,
@@ -108,8 +111,11 @@ if (!function_exists('ssr_send_sanction_notification')) {
 
         // Envoyer aux parents (co-comptes 1 et 2)
         if ($send_to_parents === '1' && function_exists('ssr_api_send_message')) {
-            // Préfixer avec INDL.
-            $student_identifier = 'INDL.' . $user_identifier;
+            // Préfixer avec INDL. si nécessaire
+            $student_identifier = $user_identifier;
+            if (!preg_match('/^INDL\./i', $student_identifier)) {
+                $student_identifier = 'INDL.' . $student_identifier;
+            }
 
             // Parent 1
             $result_p1 = ssr_api_send_message(
