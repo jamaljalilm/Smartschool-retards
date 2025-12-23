@@ -215,6 +215,11 @@ add_shortcode('retards_verif',function(){
     $toCheck = [];
     foreach ($dates as $d) { $toCheck = array_merge($toCheck, ssr_fetch_retards_by_date($d)); }
 
+    // Debug temporaire
+    if (current_user_can('manage_options')) {
+        error_log("DEBUG retards_verif - Date: $date, Dates: " . implode(',', $dates) . ", Count: " . count($toCheck) . ", SavedDates: " . implode(',', $saved_dates));
+    }
+
 	// Pré-remplissage (derniers statuts)
 	$prevMap = [];
 	if (!empty($dates)) {
@@ -241,6 +246,11 @@ add_shortcode('retards_verif',function(){
 					'at'     => $r['verified_at'] ?? '',
 				];
 			}
+		}
+
+		// Debug temporaire
+		if (current_user_can('manage_options')) {
+			error_log("DEBUG prevMap - Count: " . count($prevMap) . ", Keys: " . implode(',', array_keys($prevMap)));
 		}
 	}
 
