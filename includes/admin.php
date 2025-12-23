@@ -420,10 +420,63 @@ function ssr_admin_test_function_render() {
 
 	if (function_exists('opcache_get_status')) {
 		$status = opcache_get_status(false);
+		$config = opcache_get_configuration();
+
 		if ($status && $status['opcache_enabled']) {
 			echo '<p><strong>Statut :</strong> <span style="color:green;">✅ Activé</span></p>';
 			echo '<p><strong>Mémoire utilisée :</strong> ' . round($status['memory_usage']['used_memory'] / 1024 / 1024, 2) . ' MB</p>';
 			echo '<p><strong>Fichiers en cache :</strong> ' . $status['opcache_statistics']['num_cached_scripts'] . '</p>';
+
+			// Configuration critique pour savoir quand le cache se rafraîchit
+			echo '<hr style="margin:15px 0;border:none;border-top:1px solid #ddd;">';
+			echo '<h3 style="margin-top:10px;">⏱️ Paramètres de rafraîchissement :</h3>';
+
+			$revalidate_freq = isset($config['directives']['opcache.revalidate_freq']) ? $config['directives']['opcache.revalidate_freq'] : 'N/A';
+			$validate_timestamps = isset($config['directives']['opcache.validate_timestamps']) ? $config['directives']['opcache.validate_timestamps'] : 'N/A';
+			$restrict_api = isset($config['directives']['opcache.restrict_api']) ? $config['directives']['opcache.restrict_api'] : '';
+
+			echo '<table class="widefat" style="margin-top:10px;">';
+			echo '<tr><td style="width:50%;"><strong>opcache.validate_timestamps</strong><br><small>Vérifie si les fichiers ont changé ?</small></td><td>';
+			if ($validate_timestamps === true || $validate_timestamps === 1) {
+				echo '<span style="color:green;font-weight:bold;">✅ OUI</span>';
+			} else {
+				echo '<span style="color:red;font-weight:bold;">❌ NON (cache permanent jusqu\'au redémarrage)</span>';
+			}
+			echo '</td></tr>';
+
+			echo '<tr><td><strong>opcache.revalidate_freq</strong><br><small>Fréquence de vérification (secondes)</small></td><td>';
+			echo '<strong style="font-size:18px;color:#0073aa;">' . $revalidate_freq . ' secondes</strong>';
+			if ($revalidate_freq == 0) {
+				echo '<br><small style="color:green;">→ Vérifie à chaque requête !</small>';
+			} elseif ($revalidate_freq <= 60) {
+				echo '<br><small style="color:green;">→ Cache rafraîchi toutes les ' . $revalidate_freq . ' secondes</small>';
+			} else {
+				echo '<br><small style="color:orange;">→ Cache rafraîchi toutes les ' . round($revalidate_freq / 60, 1) . ' minutes</small>';
+			}
+			echo '</td></tr>';
+
+			echo '<tr><td><strong>opcache.restrict_api</strong><br><small>Chemin autorisé pour contrôler le cache</small></td><td>';
+			if (empty($restrict_api)) {
+				echo '<span style="color:green;">✅ Aucune restriction</span>';
+			} else {
+				echo '<span style="color:orange;">⚠️ Restreint à : <code>' . esc_html($restrict_api) . '</code></span>';
+			}
+			echo '</td></tr>';
+			echo '</table>';
+
+			// Estimation du prochain rafraîchissement
+			echo '<div style="background:#e7f3ff;border-left:4px solid #0073aa;padding:12px;margin-top:15px;">';
+			echo '<strong>📅 Estimation du prochain rafraîchissement :</strong><br>';
+			if ($validate_timestamps === false || $validate_timestamps === 0) {
+				echo '<span style="color:red;">Le cache ne se rafraîchit JAMAIS automatiquement. Redémarrage PHP-FPM requis.</span>';
+			} elseif ($revalidate_freq == 0) {
+				echo '<span style="color:green;">Le cache se rafraîchit à CHAQUE requête. Rechargez la page maintenant !</span>';
+			} else {
+				echo 'Maximum <strong>' . $revalidate_freq . ' secondes</strong> après la modification du fichier.<br>';
+				echo '<small>Fichiers modifiés : 2025-12-23 23:59 → Attendez ' . $revalidate_freq . ' secondes puis rafraîchissez le calendrier.</small>';
+			}
+			echo '</div>';
+
 		} else {
 			echo '<p><strong>Statut :</strong> <span style="color:orange;">⚠️ Désactivé</span></p>';
 		}
