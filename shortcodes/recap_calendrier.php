@@ -132,6 +132,12 @@ add_shortcode('recap_calendrier', function($atts){
 			: "''";
 		$timeSelect = "SUBSTRING_INDEX(GROUP_CONCAT(`$verified_at` ORDER BY `$verified_at` DESC SEPARATOR '||'),'||',1)";
 
+		// DEBUG: Vérifie si la fonction existe
+		if (function_exists('ssr_log')) {
+			$func_exists = function_exists('ssr_verification_date_for_retard') ? 'OUI' : 'NON';
+			ssr_log('Fonction ssr_verification_date_for_retard existe: ' . $func_exists, 'info', 'calendar-debug');
+		}
+
 		// Récupère toutes les lignes avec date_retard pour calculer la date de vérification
 		$sqlOk = "SELECT DATE(`$date_col`) AS date_retard,
 						 `$verified_at` AS verified_at,
@@ -142,6 +148,11 @@ add_shortcode('recap_calendrier', function($atts){
 				  ORDER BY `$verified_at` DESC";
 		$allRows = $wpdb->get_results($sqlOk, ARRAY_A);
 		$allRows = is_array($allRows) ? $allRows : [];
+
+		// DEBUG: Log des lignes récupérées
+		if (function_exists('ssr_log') && count($allRows) > 0) {
+			ssr_log('Calendrier - Lignes récupérées (sample): ' . print_r(array_slice($allRows, 0, 3), true), 'info', 'calendar-debug');
+		}
 
 		// Regroupe par date de vérification CALCULÉE (logique inverse)
 		$groupedByVerifDate = [];
