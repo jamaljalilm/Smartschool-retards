@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) exit;
  * Note: Le menu est enregistré dans admin.php
  */
 
-function ssr_render_admin_sanction_message_config() {
+function ssr_admin_sanction_message_config_render() {
     // Vérifier les permissions
     if (!current_user_can('manage_options')) {
         wp_die('Accès refusé');
