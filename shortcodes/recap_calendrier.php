@@ -132,16 +132,16 @@ add_shortcode('recap_calendrier', function($atts){
 			: "''";
 		$timeSelect = "SUBSTRING_INDEX(GROUP_CONCAT(`$verified_at` ORDER BY `$verified_at` DESC SEPARATOR '||'),'||',1)";
 
-		// CHANGEMENT : GROUP BY DATE(verified_at) pour voir les JOURS DE VÉRIFICATION
-		$sqlOk = "SELECT DATE(`$verified_at`) AS d,
+		// Groupe par date_retard (les jours des retards) mais garde verified_at pour l'affichage
+		$sqlOk = "SELECT DATE(`$date_col`) AS d,
 						 COUNT(*) AS cnt,
 						 $nameSelect AS last_verifier,
 						 $codeSelect AS last_code,
 						 $timeSelect AS last_at
 				  FROM `$table`
-				  WHERE `$verified_at` >= %s AND `$verified_at` < %s
+				  WHERE `$date_col` >= %s AND `$date_col` < %s
 					AND `$verified_at` IS NOT NULL
-				  GROUP BY DATE(`$verified_at`)";
+				  GROUP BY DATE(`$date_col`)";
 		$rowsOk = $wpdb->get_results(
 			$wpdb->prepare($sqlOk, $firstDay.' 00:00:00', date('Y-m-d', strtotime($lastDay.' +1 day')).' 00:00:00'),
 			ARRAY_A
@@ -167,14 +167,14 @@ add_shortcode('recap_calendrier', function($atts){
     // Compteurs présent/absent par jour
     $countsByDay = [];
     if ($status_col) {
-        // CHANGEMENT : GROUP BY DATE(verified_at) pour correspondre aux jours de vérification
-        $sqlCnt = "SELECT DATE(`$verified_at`) AS d,
+        // Groupe par date_retard pour correspondre au calendrier
+        $sqlCnt = "SELECT DATE(`$date_col`) AS d,
                           SUM(CASE WHEN LOWER(`$status_col`)='present' THEN 1 ELSE 0 END) AS present_cnt,
                           SUM(CASE WHEN LOWER(`$status_col`)='absent'  THEN 1 ELSE 0 END) AS absent_cnt
                    FROM `$table`
-                   WHERE `$verified_at` >= %s AND `$verified_at` < %s
+                   WHERE `$date_col` >= %s AND `$date_col` < %s
                      AND `$verified_at` IS NOT NULL
-                   GROUP BY DATE(`$verified_at`)";
+                   GROUP BY DATE(`$date_col`)";
         $rowsCnt = $wpdb->get_results(
             $wpdb->prepare($sqlCnt, $firstDay.' 00:00:00', date('Y-m-d', strtotime($lastDay.' +1 day')).' 00:00:00'),
             ARRAY_A
