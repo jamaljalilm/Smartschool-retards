@@ -98,6 +98,17 @@ add_action('wp_ajax_ssr_save_sanction_date', function() {
 				'sanctions'
 			);
 		}
+
+		// Envoyer la notification automatique pour nouvelle sanction
+		if (function_exists('ssr_send_sanction_notification')) {
+			ssr_send_sanction_notification([
+				'user_identifier' => $user_identifier,
+				'firstname' => $firstname,
+				'lastname' => $lastname,
+				'nb_absences' => $nb_absences,
+				'sanction_type' => $sanction_type,
+			]);
+		}
 	}
 
 	wp_send_json_success(['message' => 'Date sauvegardée']);
