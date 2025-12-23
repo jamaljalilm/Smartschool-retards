@@ -132,17 +132,32 @@ add_shortcode('recap_calendrier', function($atts){
 			: "''";
 		$timeSelect = "SUBSTRING_INDEX(GROUP_CONCAT(`$verified_at` ORDER BY `$verified_at` DESC SEPARATOR '||'),'||',1)";
 
-		// Groupe par date_retard : affiche les dates des retards vérifiés (16/12, 17/12)
+		// Groupe par date_verification : affiche $date (18/12) en vert
 		// garde verified_at pour afficher "Vérifié le 23/12" dans le panneau
-		$sqlOk = "SELECT DATE(`$date_col`) AS d,
-						 COUNT(*) AS cnt,
-						 $nameSelect AS last_verifier,
-						 $codeSelect AS last_code,
-						 $timeSelect AS last_at
-				  FROM `$table`
-				  WHERE `$date_col` >= %s AND `$date_col` < %s
-					AND `$verified_at` IS NOT NULL
-				  GROUP BY DATE(`$date_col`)";
+		$date_verif_col = $pick(['date_verification']);
+		if ($date_verif_col) {
+			// Utilise date_verification (la variable $date)
+			$sqlOk = "SELECT DATE(`$date_verif_col`) AS d,
+							 COUNT(*) AS cnt,
+							 $nameSelect AS last_verifier,
+							 $codeSelect AS last_code,
+							 $timeSelect AS last_at
+					  FROM `$table`
+					  WHERE `$date_verif_col` >= %s AND `$date_verif_col` < %s
+						AND `$verified_at` IS NOT NULL
+					  GROUP BY DATE(`$date_verif_col`)";
+		} else {
+			// Fallback si colonne pas encore créée : groupe par date_retard
+			$sqlOk = "SELECT DATE(`$date_col`) AS d,
+							 COUNT(*) AS cnt,
+							 $nameSelect AS last_verifier,
+							 $codeSelect AS last_code,
+							 $timeSelect AS last_at
+					  FROM `$table`
+					  WHERE `$date_col` >= %s AND `$date_col` < %s
+						AND `$verified_at` IS NOT NULL
+					  GROUP BY DATE(`$date_col`)";
+		}
 		$rowsOk = $wpdb->get_results(
 			$wpdb->prepare($sqlOk, $firstDay.' 00:00:00', date('Y-m-d', strtotime($lastDay.' +1 day')).' 00:00:00'),
 			ARRAY_A
@@ -168,14 +183,25 @@ add_shortcode('recap_calendrier', function($atts){
     // Compteurs présent/absent par jour
     $countsByDay = [];
     if ($status_col) {
-        // Groupe par date_retard : compteurs pour les dates des retards
-        $sqlCnt = "SELECT DATE(`$date_col`) AS d,
-                          SUM(CASE WHEN LOWER(`$status_col`)='present' THEN 1 ELSE 0 END) AS present_cnt,
-                          SUM(CASE WHEN LOWER(`$status_col`)='absent'  THEN 1 ELSE 0 END) AS absent_cnt
-                   FROM `$table`
-                   WHERE `$date_col` >= %s AND `$date_col` < %s
-                     AND `$verified_at` IS NOT NULL
-                   GROUP BY DATE(`$date_col`)";
+        // Groupe par date_verification : compteurs pour $date
+        if ($date_verif_col) {
+            $sqlCnt = "SELECT DATE(`$date_verif_col`) AS d,
+                              SUM(CASE WHEN LOWER(`$status_col`)='present' THEN 1 ELSE 0 END) AS present_cnt,
+                              SUM(CASE WHEN LOWER(`$status_col`)='absent'  THEN 1 ELSE 0 END) AS absent_cnt
+                       FROM `$table`
+                       WHERE `$date_verif_col` >= %s AND `$date_verif_col` < %s
+                         AND `$verified_at` IS NOT NULL
+                       GROUP BY DATE(`$date_verif_col`)";
+        } else {
+            // Fallback
+            $sqlCnt = "SELECT DATE(`$date_col`) AS d,
+                              SUM(CASE WHEN LOWER(`$status_col`)='present' THEN 1 ELSE 0 END) AS present_cnt,
+                              SUM(CASE WHEN LOWER(`$status_col`)='absent'  THEN 1 ELSE 0 END) AS absent_cnt
+                       FROM `$table`
+                       WHERE `$date_col` >= %s AND `$date_col` < %s
+                         AND `$verified_at` IS NOT NULL
+                       GROUP BY DATE(`$date_col`)";
+        }
         $rowsCnt = $wpdb->get_results(
             $wpdb->prepare($sqlCnt, $firstDay.' 00:00:00', date('Y-m-d', strtotime($lastDay.' +1 day')).' 00:00:00'),
             ARRAY_A
