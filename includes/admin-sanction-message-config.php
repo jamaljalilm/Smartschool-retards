@@ -2,20 +2,11 @@
 if (!defined('ABSPATH')) exit;
 
 /**
- * Page d'administration pour configurer les messages automatiques de sanction
+ * includes/admin-sanction-message-config.php
+ * Configuration des messages automatiques de sanction
+ *
+ * Note: Le menu est enregistré dans admin.php
  */
-
-// Ajouter la sous-page au menu
-add_action('admin_menu', function() {
-    add_submenu_page(
-        'smartschool-retards-settings',
-        'Messages de sanction',
-        'Messages sanction',
-        'manage_options',
-        'smartschool-retards-sanction-messages',
-        'ssr_render_admin_sanction_message_config'
-    );
-}, 20);
 
 function ssr_render_admin_sanction_message_config() {
     // Vérifier les permissions

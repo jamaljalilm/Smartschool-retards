@@ -44,6 +44,16 @@ add_action('admin_menu', function(){
         'ssr_admin_daily_message_config_render'
     );
 
+    // Sous-menu : Messages de sanction
+    add_submenu_page(
+        'ssr-settings',
+        __('Messages Sanction','smartschool-retards'),
+        __('⚖️ Messages Sanction','smartschool-retards'),
+        'manage_options',
+        'ssr-sanction-message-config',
+        'ssr_render_admin_sanction_message_config'
+    );
+
     // Sous-menu : Historique Messages
     add_submenu_page(
         'ssr-settings',
