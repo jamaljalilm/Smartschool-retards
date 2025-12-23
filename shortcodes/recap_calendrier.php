@@ -1,6 +1,6 @@
 <?php
 if (!defined('ABSPATH')) exit;
-// Version 2.0 - Calculation-based calendar (force OPcache recompile)
+// Version 2.1 - Force reload (timestamp: 2025-12-23 23:59)
 
 /** Fallbacks doux si tes helpers ne sont pas chargés **/
 if (!function_exists('ssr_cal_get_settings')) {

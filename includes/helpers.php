@@ -1,6 +1,6 @@
 <?php
 if (!defined('ABSPATH')) exit;
-// Version 2.0 - Added ssr_verification_date_for_retard() function
+// Version 2.1 - Force reload (timestamp: 2025-12-23 23:59)
 
 /**
  * Helpers génériques (sans UI, sans shortcode)
