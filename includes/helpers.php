@@ -138,6 +138,43 @@ function ssr_to_ymd($s){
  * @return array Liste de dates au format Y-m-d
  */
 if (!function_exists('ssr_prev_days_for_check')) {
+/**
+ * Calcule la date de vérification à partir d'une date de retard (logique inverse)
+ * @param string $date_retard Date du retard (Y-m-d)
+ * @return string Date de vérification (Y-m-d)
+ */
+function ssr_verification_date_for_retard($date_retard) {
+    $tz = new DateTimeZone('Europe/Brussels');
+    $retardDate = new DateTime($date_retard, $tz);
+    $dow = (int)$retardDate->format('N'); // 1=lundi, ..., 7=dimanche
+
+    switch ($dow) {
+        case 1: // Lundi (retard) → vérifié Mardi
+            $retardDate->modify('+1 day');
+            break;
+        case 2: // Mardi (retard) → vérifié Jeudi
+            $retardDate->modify('+2 days');
+            break;
+        case 3: // Mercredi (retard) → vérifié Jeudi
+            $retardDate->modify('+1 day');
+            break;
+        case 4: // Jeudi (retard) → vérifié Vendredi
+            $retardDate->modify('+1 day');
+            break;
+        case 5: // Vendredi (retard) → vérifié Lundi suivant
+            $retardDate->modify('+3 days');
+            break;
+        case 6: // Samedi → vérifié Lundi suivant
+        case 7: // Dimanche → vérifié Lundi suivant
+            $daysToMonday = (8 - $dow) % 7;
+            if ($daysToMonday == 0) $daysToMonday = 1;
+            $retardDate->modify("+{$daysToMonday} days");
+            break;
+    }
+
+    return $retardDate->format('Y-m-d');
+}
+
 function ssr_prev_days_for_check($date = null) {
     $tz = new DateTimeZone('Europe/Brussels');
 

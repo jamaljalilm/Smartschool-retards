@@ -132,37 +132,62 @@ add_shortcode('recap_calendrier', function($atts){
 			: "''";
 		$timeSelect = "SUBSTRING_INDEX(GROUP_CONCAT(`$verified_at` ORDER BY `$verified_at` DESC SEPARATOR '||'),'||',1)";
 
-		// Groupe par date_verification : affiche $date (18/12) en vert
-		// garde verified_at pour afficher "Vérifié le 23/12" dans le panneau
-		$date_verif_col = $pick(['date_verification']);
-		if ($date_verif_col) {
-			// Utilise date_verification (la variable $date)
-			$sqlOk = "SELECT DATE(`$date_verif_col`) AS d,
-							 COUNT(*) AS cnt,
-							 $nameSelect AS last_verifier,
-							 $codeSelect AS last_code,
-							 $timeSelect AS last_at
-					  FROM `$table`
-					  WHERE `$date_verif_col` >= %s AND `$date_verif_col` < %s
-						AND `$verified_at` IS NOT NULL
-					  GROUP BY DATE(`$date_verif_col`)";
-		} else {
-			// Fallback si colonne pas encore créée : groupe par date_retard
-			$sqlOk = "SELECT DATE(`$date_col`) AS d,
-							 COUNT(*) AS cnt,
-							 $nameSelect AS last_verifier,
-							 $codeSelect AS last_code,
-							 $timeSelect AS last_at
-					  FROM `$table`
-					  WHERE `$date_col` >= %s AND `$date_col` < %s
-						AND `$verified_at` IS NOT NULL
-					  GROUP BY DATE(`$date_col`)";
+		// Récupère toutes les lignes avec date_retard pour calculer la date de vérification
+		$sqlOk = "SELECT DATE(`$date_col`) AS date_retard,
+						 `$verified_at` AS verified_at,
+						 " . ($verifier_col ? "`$verifier_col`" : "''") . " AS verifier_name,
+						 " . ($code_col ? "`$code_col`" : "''") . " AS verifier_code
+				  FROM `$table`
+				  WHERE `$verified_at` IS NOT NULL
+				  ORDER BY `$verified_at` DESC";
+		$allRows = $wpdb->get_results($sqlOk, ARRAY_A);
+		$allRows = is_array($allRows) ? $allRows : [];
+
+		// Regroupe par date de vérification CALCULÉE (logique inverse)
+		$groupedByVerifDate = [];
+		foreach ($allRows as $row) {
+			$date_retard = $row['date_retard'];
+			$verified_at = $row['verified_at'];
+
+			// Calcule la date de vérification théorique à partir du date_retard
+			if (function_exists('ssr_verification_date_for_retard')) {
+				$verif_date = ssr_verification_date_for_retard($date_retard);
+			} else {
+				$verif_date = $date_retard; // Fallback
+			}
+
+			// Filtre par le mois affiché
+			if ($verif_date < $firstDay || $verif_date > $lastDay) {
+				continue;
+			}
+
+			// Groupe par date de vérification calculée
+			if (!isset($groupedByVerifDate[$verif_date])) {
+				$groupedByVerifDate[$verif_date] = [
+					'cnt' => 0,
+					'verified_at_list' => [],
+					'verifier_name_list' => [],
+					'verifier_code_list' => []
+				];
+			}
+
+			$groupedByVerifDate[$verif_date]['cnt']++;
+			$groupedByVerifDate[$verif_date]['verified_at_list'][] = $verified_at;
+			$groupedByVerifDate[$verif_date]['verifier_name_list'][] = $row['verifier_name'];
+			$groupedByVerifDate[$verif_date]['verifier_code_list'][] = $row['verifier_code'];
 		}
-		$rowsOk = $wpdb->get_results(
-			$wpdb->prepare($sqlOk, $firstDay.' 00:00:00', date('Y-m-d', strtotime($lastDay.' +1 day')).' 00:00:00'),
-			ARRAY_A
-		);
-		$rowsOk = is_array($rowsOk) ? $rowsOk : [];
+
+		// Construit le tableau final
+		$rowsOk = [];
+		foreach ($groupedByVerifDate as $verif_date => $data) {
+			$rowsOk[] = [
+				'd' => $verif_date,
+				'cnt' => $data['cnt'],
+				'last_verifier' => $data['verifier_name_list'][0] ?? '',
+				'last_code' => $data['verifier_code_list'][0] ?? '',
+				'last_at' => $data['verified_at_list'][0] ?? null
+			];
+		}
 
 		// DEBUG: Log des résultats de la requête
 		if (function_exists('ssr_log')) {
@@ -180,44 +205,49 @@ add_shortcode('recap_calendrier', function($atts){
 	}
 
 
-    // Compteurs présent/absent par jour
+    // Compteurs présent/absent par jour (même logique : calcule date de vérification)
     $countsByDay = [];
     if ($status_col) {
-        // Groupe par date_verification : compteurs pour $date
-        if ($date_verif_col) {
-            $sqlCnt = "SELECT DATE(`$date_verif_col`) AS d,
-                              SUM(CASE WHEN LOWER(`$status_col`)='present' THEN 1 ELSE 0 END) AS present_cnt,
-                              SUM(CASE WHEN LOWER(`$status_col`)='absent'  THEN 1 ELSE 0 END) AS absent_cnt
-                       FROM `$table`
-                       WHERE `$date_verif_col` >= %s AND `$date_verif_col` < %s
-                         AND `$verified_at` IS NOT NULL
-                       GROUP BY DATE(`$date_verif_col`)";
-        } else {
-            // Fallback
-            $sqlCnt = "SELECT DATE(`$date_col`) AS d,
-                              SUM(CASE WHEN LOWER(`$status_col`)='present' THEN 1 ELSE 0 END) AS present_cnt,
-                              SUM(CASE WHEN LOWER(`$status_col`)='absent'  THEN 1 ELSE 0 END) AS absent_cnt
-                       FROM `$table`
-                       WHERE `$date_col` >= %s AND `$date_col` < %s
-                         AND `$verified_at` IS NOT NULL
-                       GROUP BY DATE(`$date_col`)";
+        $sqlCnt = "SELECT DATE(`$date_col`) AS date_retard,
+                          LOWER(`$status_col`) AS status
+                   FROM `$table`
+                   WHERE `$verified_at` IS NOT NULL";
+        $cntRows = $wpdb->get_results($sqlCnt, ARRAY_A);
+        $cntRows = is_array($cntRows) ? $cntRows : [];
+
+        // Regroupe par date de vérification calculée
+        $groupedCounts = [];
+        foreach ($cntRows as $row) {
+            $date_retard = $row['date_retard'];
+            $status = $row['status'];
+
+            if (function_exists('ssr_verification_date_for_retard')) {
+                $verif_date = ssr_verification_date_for_retard($date_retard);
+            } else {
+                $verif_date = $date_retard;
+            }
+
+            // Filtre par le mois affiché
+            if ($verif_date < $firstDay || $verif_date > $lastDay) {
+                continue;
+            }
+
+            if (!isset($groupedCounts[$verif_date])) {
+                $groupedCounts[$verif_date] = ['present' => 0, 'absent' => 0];
+            }
+
+            if ($status === 'present') {
+                $groupedCounts[$verif_date]['present']++;
+            } elseif ($status === 'absent') {
+                $groupedCounts[$verif_date]['absent']++;
+            }
         }
-        $rowsCnt = $wpdb->get_results(
-            $wpdb->prepare($sqlCnt, $firstDay.' 00:00:00', date('Y-m-d', strtotime($lastDay.' +1 day')).' 00:00:00'),
-            ARRAY_A
-        );
-        $rowsCnt = is_array($rowsCnt) ? $rowsCnt : [];
+
+        $countsByDay = $groupedCounts;
 
         // DEBUG: Log des compteurs
         if (function_exists('ssr_log')) {
-            ssr_log('Calendrier - Compteurs: ' . print_r($rowsCnt, true), 'info', 'calendar-debug');
-        }
-
-        foreach ($rowsCnt as $r) {
-            $countsByDay[$r['d']] = [
-                'present'=> isset($r['present_cnt']) ? (int)$r['present_cnt'] : 0,
-                'absent' => isset($r['absent_cnt'])  ? (int)$r['absent_cnt']  : 0,
-            ];
+            ssr_log('Calendrier - Compteurs: ' . print_r($countsByDay, true), 'info', 'calendar-debug');
         }
     }
 
