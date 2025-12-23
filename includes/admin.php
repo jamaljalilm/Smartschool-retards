@@ -364,8 +364,47 @@ function ssr_admin_page_render(){
 function ssr_admin_test_function_render() {
 	if (!current_user_can('manage_options')) return;
 
+	// Gestion du reset OPcache
+	if (isset($_POST['ssr_reset_opcache']) && check_admin_referer('ssr_reset_opcache_action', 'ssr_reset_opcache_nonce')) {
+		if (function_exists('opcache_reset')) {
+			$result = opcache_reset();
+			if ($result) {
+				echo '<div class="notice notice-success is-dismissible"><p><strong>✅ OPcache vidé avec succès !</strong></p></div>';
+			} else {
+				echo '<div class="notice notice-error is-dismissible"><p><strong>❌ Échec du vidage d\'OPcache</strong></p></div>';
+			}
+		} else {
+			echo '<div class="notice notice-warning is-dismissible"><p><strong>⚠️ OPcache n\'est pas disponible sur ce serveur</strong></p></div>';
+		}
+	}
+
 	echo '<div class="wrap">';
 	echo '<h1>🧪 Test de la fonction ssr_verification_date_for_retard</h1>';
+
+	// Section OPcache
+	echo '<div style="background:#fff;border:1px solid #ccd0d4;border-radius:4px;padding:15px;margin:20px 0;">';
+	echo '<h2 style="margin-top:0;">🔄 Cache PHP (OPcache)</h2>';
+
+	if (function_exists('opcache_get_status')) {
+		$status = opcache_get_status(false);
+		if ($status && $status['opcache_enabled']) {
+			echo '<p><strong>Statut :</strong> <span style="color:green;">✅ Activé</span></p>';
+			echo '<p><strong>Mémoire utilisée :</strong> ' . round($status['memory_usage']['used_memory'] / 1024 / 1024, 2) . ' MB</p>';
+			echo '<p><strong>Fichiers en cache :</strong> ' . $status['opcache_statistics']['num_cached_scripts'] . '</p>';
+		} else {
+			echo '<p><strong>Statut :</strong> <span style="color:orange;">⚠️ Désactivé</span></p>';
+		}
+	} else {
+		echo '<p><strong>Statut :</strong> <span style="color:gray;">❌ Non disponible</span></p>';
+	}
+
+	// Formulaire de reset
+	echo '<form method="post" style="margin-top:15px;">';
+	wp_nonce_field('ssr_reset_opcache_action', 'ssr_reset_opcache_nonce');
+	echo '<input type="hidden" name="ssr_reset_opcache" value="1">';
+	submit_button('🔄 Vider OPcache maintenant', 'secondary', 'submit', false);
+	echo '</form>';
+	echo '</div>';
 
 	// Vérifie si la fonction existe
 	if (function_exists('ssr_verification_date_for_retard')) {
@@ -403,7 +442,7 @@ function ssr_admin_test_function_render() {
 	} else {
 		echo '<div class="notice notice-error"><p style="font-size:16px;"><strong>❌ La fonction N\'EXISTE PAS !</strong></p></div>';
 		echo '<p>Cela signifie que le fichier <code>helpers.php</code> n\'a pas été chargé correctement ou que le cache PHP n\'a pas été vidé.</p>';
-		echo '<p><strong>Solution :</strong> Videz le cache OPcache ou redémarrez PHP-FPM/Apache.</p>';
+		echo '<p><strong>Solution :</strong> Videz le cache OPcache avec le bouton ci-dessus ou redémarrez PHP-FPM/Apache.</p>';
 	}
 
 	echo '</div>';
