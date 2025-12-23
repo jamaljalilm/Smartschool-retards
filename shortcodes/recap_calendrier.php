@@ -147,12 +147,18 @@ add_shortcode('recap_calendrier', function($atts){
 			ARRAY_A
 		);
 		$rowsOk = is_array($rowsOk) ? $rowsOk : [];
+
+		// DEBUG: Log des résultats de la requête
+		if (function_exists('ssr_log')) {
+			ssr_log('Calendrier - Requête vérifications: ' . print_r($rowsOk, true), 'info', 'calendar-debug');
+		}
+
 		foreach ($rowsOk as $r) {
 			$verifiedByDay[$r['d']] = [
 				'cnt'  => isset($r['cnt']) ? (int)$r['cnt'] : 0,
 				'who'  => isset($r['last_verifier']) ? $r['last_verifier'] : '',
 				'code' => isset($r['last_code']) ? $r['last_code'] : '',
-				'at'   => isset($r['last_at']) ? $r['last_at'] : null, // << ajoute l’horodatage brut
+				'at'   => isset($r['last_at']) ? $r['last_at'] : null, // << ajoute l'horodatage brut
 			];
 		}
 	}
@@ -174,6 +180,12 @@ add_shortcode('recap_calendrier', function($atts){
             ARRAY_A
         );
         $rowsCnt = is_array($rowsCnt) ? $rowsCnt : [];
+
+        // DEBUG: Log des compteurs
+        if (function_exists('ssr_log')) {
+            ssr_log('Calendrier - Compteurs: ' . print_r($rowsCnt, true), 'info', 'calendar-debug');
+        }
+
         foreach ($rowsCnt as $r) {
             $countsByDay[$r['d']] = [
                 'present'=> isset($r['present_cnt']) ? (int)$r['present_cnt'] : 0,
