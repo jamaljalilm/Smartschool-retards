@@ -1,5 +1,6 @@
 <?php
 if (!defined('ABSPATH')) exit;
+// Version 2.0 - Added ssr_verification_date_for_retard() function
 
 /**
  * Helpers génériques (sans UI, sans shortcode)
