@@ -156,15 +156,16 @@ add_shortcode('retards_verif',function(){
 
                 $now = current_time('mysql');
                 $wpdb->replace($ver, [
-                    'user_identifier' => $uid,
-                    'class_code'      => $class,
-                    'last_name'       => $ln,
-                    'first_name'      => $fn,
-                    'date_retard'     => $d,
-                    'status'          => $new,
-                    'verified_at'     => $now,
-                    'verified_by_code'=> (string)$verifier_id,
-                    'verified_by_name'=> (string)$verifier_name
+                    'user_identifier'   => $uid,
+                    'class_code'        => $class,
+                    'last_name'         => $ln,
+                    'first_name'        => $fn,
+                    'date_retard'       => $d,
+                    'date_verification' => $date, // La variable $date (18/12) pour le calendrier
+                    'status'            => $new,
+                    'verified_at'       => $now,
+                    'verified_by_code'  => (string)$verifier_id,
+                    'verified_by_name'  => (string)$verifier_name
                 ]);
 
                 $wpdb->insert($ver_audit, [
