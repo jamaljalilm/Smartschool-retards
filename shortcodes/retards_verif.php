@@ -261,19 +261,22 @@ add_shortcode('retards_verif',function(){
 
     $count = count($toCheck);
 
-    // Statut global & pastilles
-    $lastVerif = $wpdb->get_row(
-        $wpdb->prepare("SELECT verified_by_code, verified_by_name, verified_at FROM $ver WHERE date_retard=%s ORDER BY verified_at DESC LIMIT 1", $date),
-        ARRAY_A
-    );
-    $countPresent = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $ver WHERE date_retard=%s AND status='present'", $date));
-    $countAbsent  = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $ver WHERE date_retard=%s AND status='absent'", $date));
+    // Statut global & pastilles - vérifie pour TOUTES les dates concernées
 	if (empty($dates)) {
-		// Pas de jour à vérifier aujourd’hui
+		// Pas de jour à vérifier aujourd'hui
 		$lastVerif = null;
 		$countPresent = 0;
 		$countAbsent  = 0;
-	}
+	} else {
+        // Cherche dans toutes les dates de $dates, pas seulement $date
+        $in = implode(',', array_fill(0, count($dates), '%s'));
+        $lastVerif = $wpdb->get_row(
+            $wpdb->prepare("SELECT verified_by_code, verified_by_name, verified_at FROM $ver WHERE date_retard IN ($in) ORDER BY verified_at DESC LIMIT 1", ...$dates),
+            ARRAY_A
+        );
+        $countPresent = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $ver WHERE date_retard IN ($in) AND status='present'", ...$dates));
+        $countAbsent  = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $ver WHERE date_retard IN ($in) AND status='absent'", ...$dates));
+    }
 
     if ($lastVerif) {
         $whoName = $lastVerif['verified_by_name'] ?: ( ($lastVerif['verified_by_code'] ?? '') ? '#'.$lastVerif['verified_by_code'] : '' );
