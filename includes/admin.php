@@ -366,12 +366,45 @@ function ssr_admin_test_function_render() {
 
 	// Gestion du reset OPcache
 	if (isset($_POST['ssr_reset_opcache']) && check_admin_referer('ssr_reset_opcache_action', 'ssr_reset_opcache_nonce')) {
+		$success_count = 0;
+		$failed_files = [];
+
+		// Liste des fichiers à invalider
+		$files_to_invalidate = [
+			SSR_INC_DIR . 'helpers.php',
+			SSR_SC_DIR . 'recap_calendrier.php',
+		];
+
+		// Tente d'abord opcache_reset (tout vider)
 		if (function_exists('opcache_reset')) {
-			$result = opcache_reset();
-			if ($result) {
-				echo '<div class="notice notice-success is-dismissible"><p><strong>✅ OPcache vidé avec succès !</strong></p></div>';
+			if (opcache_reset()) {
+				echo '<div class="notice notice-success is-dismissible"><p><strong>✅ OPcache vidé avec succès (opcache_reset) !</strong></p></div>';
 			} else {
-				echo '<div class="notice notice-error is-dismissible"><p><strong>❌ Échec du vidage d\'OPcache</strong></p></div>';
+				// Si opcache_reset échoue, essaye opcache_invalidate sur chaque fichier
+				if (function_exists('opcache_invalidate')) {
+					foreach ($files_to_invalidate as $file) {
+						if (file_exists($file)) {
+							if (opcache_invalidate($file, true)) {
+								$success_count++;
+							} else {
+								$failed_files[] = basename($file);
+							}
+						}
+					}
+
+					if ($success_count > 0) {
+						echo '<div class="notice notice-success is-dismissible"><p><strong>✅ Cache invalidé pour ' . $success_count . ' fichier(s) !</strong></p></div>';
+					}
+					if (count($failed_files) > 0) {
+						echo '<div class="notice notice-warning is-dismissible"><p><strong>⚠️ Échec pour : ' . implode(', ', $failed_files) . '</strong></p></div>';
+					}
+					if ($success_count === 0 && count($failed_files) === 0) {
+						echo '<div class="notice notice-error is-dismissible"><p><strong>❌ Aucun fichier n\'a pu être invalidé</strong></p></div>';
+					}
+				} else {
+					echo '<div class="notice notice-error is-dismissible"><p><strong>❌ opcache_reset bloqué et opcache_invalidate non disponible</strong></p></div>';
+					echo '<div class="notice notice-info"><p><strong>Solution :</strong> Redémarrez PHP-FPM en ligne de commande :<br><code>sudo systemctl restart php8.1-fpm</code></p></div>';
+				}
 			}
 		} else {
 			echo '<div class="notice notice-warning is-dismissible"><p><strong>⚠️ OPcache n\'est pas disponible sur ce serveur</strong></p></div>';
