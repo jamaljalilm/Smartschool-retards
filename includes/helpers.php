@@ -137,12 +137,13 @@ function ssr_to_ymd($s){
  * @param string|null $date Date au format Y-m-d (si null, utilise aujourd'hui)
  * @return array Liste de dates au format Y-m-d
  */
-if (!function_exists('ssr_prev_days_for_check')) {
+
 /**
  * Calcule la date de vérification à partir d'une date de retard (logique inverse)
  * @param string $date_retard Date du retard (Y-m-d)
  * @return string Date de vérification (Y-m-d)
  */
+if (!function_exists('ssr_verification_date_for_retard')) {
 function ssr_verification_date_for_retard($date_retard) {
     $tz = new DateTimeZone('Europe/Brussels');
     $retardDate = new DateTime($date_retard, $tz);
@@ -174,7 +175,9 @@ function ssr_verification_date_for_retard($date_retard) {
 
     return $retardDate->format('Y-m-d');
 }
+}
 
+if (!function_exists('ssr_prev_days_for_check')) {
 function ssr_prev_days_for_check($date = null) {
     $tz = new DateTimeZone('Europe/Brussels');
 
