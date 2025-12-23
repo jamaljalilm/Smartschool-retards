@@ -1,10 +1,10 @@
 <?php
 if (!defined('ABSPATH')) exit;
-// Version 2.1 - Force reload (timestamp: 2025-12-23 23:59)
-
 /**
  * Helpers génériques (sans UI, sans shortcode)
  * Utilisés par admin, shortcodes et cron.
+ * Version 2.2 - Fonction ssr_verification_date_for_retard()
+ * Dernière modification: 2025-12-24 00:15
  */
 
 /* ============ Options utils ============ */

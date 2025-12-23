@@ -1,6 +1,10 @@
 <?php
 if (!defined('ABSPATH')) exit;
-// Version 2.1 - Force reload (timestamp: 2025-12-23 23:59)
+/**
+ * Calendrier des vérifications - Version 2.2
+ * Utilise la logique de calcul inverse de ssr_prev_days_for_check()
+ * Dernière modification: 2025-12-24 00:15
+ */
 
 /** Fallbacks doux si tes helpers ne sont pas chargés **/
 if (!function_exists('ssr_cal_get_settings')) {
