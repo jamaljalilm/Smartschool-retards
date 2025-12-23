@@ -496,12 +496,13 @@ function ssr_admin_test_function_render() {
 	if (function_exists('ssr_verification_date_for_retard')) {
 		echo '<div class="notice notice-success"><p style="font-size:16px;"><strong>✅ La fonction existe !</strong></p></div>';
 
-		// Test avec quelques dates
+		// Test avec quelques dates (avec les VRAIS jours de la semaine)
 		$tests = [
-			'2025-12-02' => ['expected' => '2025-12-03', 'desc' => 'Lundi → Mardi'],
-			'2025-12-17' => ['expected' => '2025-12-19', 'desc' => 'Mardi → Jeudi'],
-			'2025-12-18' => ['expected' => '2025-12-19', 'desc' => 'Mercredi → Jeudi'],
-			'2025-12-23' => ['expected' => '2025-12-24', 'desc' => 'Lundi → Mardi'],
+			'2025-12-01' => ['expected' => '2025-12-02', 'desc' => 'Lundi retard → Mardi vérif'],
+			'2025-12-02' => ['expected' => '2025-12-04', 'desc' => 'Mardi retard → Jeudi vérif'],
+			'2025-12-03' => ['expected' => '2025-12-04', 'desc' => 'Mercredi retard → Jeudi vérif'],
+			'2025-12-04' => ['expected' => '2025-12-05', 'desc' => 'Jeudi retard → Vendredi vérif'],
+			'2025-12-05' => ['expected' => '2025-12-08', 'desc' => 'Vendredi retard → Lundi vérif'],
 		];
 
 		echo '<h2>Tests de calcul :</h2>';
