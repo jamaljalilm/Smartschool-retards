@@ -589,6 +589,81 @@ function ssr_admin_test_function_render() {
 
 	echo '</div>';
 
+	// Section Diagnostic Messages Sanctions
+	echo '<div style="background:#fff;border:1px solid #ccd0d4;border-radius:4px;padding:15px;margin:20px 0;">';
+	echo '<h2 style="margin-top:0;">⚖️ Diagnostic des Messages Sanctions</h2>';
+
+	echo '<p><strong>ℹ️ Note :</strong> Les messages sanctions sont envoyés automatiquement quand vous <strong>créez une sanction</strong> dans la page <a href="' . admin_url('admin.php?page=ssr-liste-retenues') . '">Liste des retenues</a>.</p>';
+
+	echo '<table class="widefat" style="margin-top:10px;">';
+
+	// 1. Envoi automatique
+	$sanction_auto = get_option('ssr_sanction_auto_send', '1');
+	echo '<tr><td style="width:50%;"><strong>Envoi automatique</strong><br><small>Si activé, envoie automatiquement lors de la création d\'une sanction</small></td><td>';
+	if ($sanction_auto === '1') {
+		echo '<span style="color:green;font-weight:bold;">✅ ACTIVÉ</span>';
+	} else {
+		echo '<span style="color:red;font-weight:bold;">❌ DÉSACTIVÉ (messages bloqués)</span>';
+		echo '<br><small>→ Allez dans <a href="' . admin_url('admin.php?page=ssr-sanction-message-config') . '">Messages Sanctions</a> pour activer</small>';
+	}
+	echo '</td></tr>';
+
+	// 2. Destinataires
+	$sanction_student = get_option('ssr_sanction_send_to_student', '1');
+	$sanction_parents = get_option('ssr_sanction_send_to_parents', '1');
+	echo '<tr><td><strong>Destinataires</strong><br><small>À qui les messages de sanction sont envoyés</small></td><td>';
+	$sanction_recipients = [];
+	if ($sanction_student === '1') $sanction_recipients[] = '✅ Élèves';
+	else $sanction_recipients[] = '❌ Élèves';
+	if ($sanction_parents === '1') $sanction_recipients[] = '✅ Parents';
+	else $sanction_recipients[] = '❌ Parents';
+	echo implode(' • ', $sanction_recipients);
+	echo '</td></tr>';
+
+	// 3. Template configuré
+	$sanction_body = get_option('ssr_sanction_message_body', '');
+	echo '<tr><td><strong>Template de message</strong><br><small>Message configuré pour les sanctions</small></td><td>';
+	if (!empty($sanction_body)) {
+		echo '<span style="color:green;font-weight:bold;">✅ Configuré</span>';
+		echo '<br><small>Longueur : ' . strlen($sanction_body) . ' caractères</small>';
+	} else {
+		echo '<span style="color:red;font-weight:bold;">❌ VIDE (messages ne peuvent pas être envoyés)</span>';
+		echo '<br><small>→ Allez dans <a href="' . admin_url('admin.php?page=ssr-sanction-message-config') . '">Messages Sanctions</a> pour configurer</small>';
+	}
+	echo '</td></tr>';
+
+	echo '</table>';
+
+	// Logs récents sanctions
+	$sanction_logs = $wpdb->get_results($wpdb->prepare(
+		"SELECT created_at, level, context, message
+		 FROM $log_table
+		 WHERE context = 'sanctions'
+		 ORDER BY created_at DESC
+		 LIMIT 10"
+	), ARRAY_A);
+
+	if (!empty($sanction_logs)) {
+		echo '<h3 style="margin-top:20px;">📋 Logs récents (sanctions) :</h3>';
+		echo '<table class="widefat striped" style="margin-top:10px;">';
+		echo '<thead><tr><th>Date</th><th>Niveau</th><th>Message</th></tr></thead>';
+		echo '<tbody>';
+		foreach ($sanction_logs as $log) {
+			$level_color = $log['level'] === 'error' ? 'red' : ($log['level'] === 'warning' ? 'orange' : 'green');
+			echo '<tr>';
+			echo '<td style="white-space:nowrap;">' . esc_html($log['created_at']) . '</td>';
+			echo '<td style="color:' . $level_color . ';font-weight:bold;">' . esc_html($log['level']) . '</td>';
+			echo '<td>' . esc_html($log['message']) . '</td>';
+			echo '</tr>';
+		}
+		echo '</tbody></table>';
+	} else {
+		echo '<p style="margin-top:15px;"><em>Aucun log de sanction trouvé.</em></p>';
+		echo '<p><small>💡 <strong>Conseil :</strong> Essayez de créer une sanction dans <a href="' . admin_url('admin.php?page=ssr-liste-retenues') . '">Liste des retenues</a> pour tester l\'envoi.</small></p>';
+	}
+
+	echo '</div>';
+
 	// Vérifie si la fonction existe
 	if (function_exists('ssr_verification_date_for_retard')) {
 		echo '<div class="notice notice-success"><p style="font-size:16px;"><strong>✅ La fonction existe !</strong></p></div>';
