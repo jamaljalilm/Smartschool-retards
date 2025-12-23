@@ -73,6 +73,16 @@ add_action('admin_menu', function(){
         'ssr-view-logs',
         'ssr_admin_view_logs_render'
     );
+
+    // Sous-menu : Test Fonction
+    add_submenu_page(
+        'ssr-settings',
+        __('Test Fonction','smartschool-retards'),
+        __('🧪 Test Fonction','smartschool-retards'),
+        'manage_options',
+        'ssr-test-function',
+        'ssr_admin_test_function_render'
+    );
 });
 
 /* ========================== PAGE ADMIN (réglages) ========================== */
@@ -346,4 +356,55 @@ function ssr_admin_page_render(){
 
     </div>
     <?php
+}
+
+/**
+ * Page de test de la fonction ssr_verification_date_for_retard
+ */
+function ssr_admin_test_function_render() {
+	if (!current_user_can('manage_options')) return;
+
+	echo '<div class="wrap">';
+	echo '<h1>🧪 Test de la fonction ssr_verification_date_for_retard</h1>';
+
+	// Vérifie si la fonction existe
+	if (function_exists('ssr_verification_date_for_retard')) {
+		echo '<div class="notice notice-success"><p style="font-size:16px;"><strong>✅ La fonction existe !</strong></p></div>';
+
+		// Test avec quelques dates
+		$tests = [
+			'2025-12-02' => ['expected' => '2025-12-03', 'desc' => 'Lundi → Mardi'],
+			'2025-12-17' => ['expected' => '2025-12-19', 'desc' => 'Mardi → Jeudi'],
+			'2025-12-18' => ['expected' => '2025-12-19', 'desc' => 'Mercredi → Jeudi'],
+			'2025-12-23' => ['expected' => '2025-12-24', 'desc' => 'Lundi → Mardi'],
+		];
+
+		echo '<h2>Tests de calcul :</h2>';
+		echo '<table class="wp-list-table widefat fixed striped">';
+		echo '<thead><tr><th>Date retard</th><th>Description</th><th>Attendu</th><th>Résultat</th><th>Status</th></tr></thead>';
+		echo '<tbody>';
+
+		foreach ($tests as $date => $info) {
+			$result = ssr_verification_date_for_retard($date);
+			$expected = $info['expected'];
+			$ok = ($result === $expected);
+			$status = $ok ? '<span style="color:green;font-weight:bold;">✅ OK</span>' : '<span style="color:red;font-weight:bold;">❌ ERREUR</span>';
+			echo "<tr>";
+			echo "<td><code>$date</code></td>";
+			echo "<td>{$info['desc']}</td>";
+			echo "<td><code>$expected</code></td>";
+			echo "<td><strong><code>$result</code></strong></td>";
+			echo "<td>$status</td>";
+			echo "</tr>";
+		}
+
+		echo '</tbody></table>';
+
+	} else {
+		echo '<div class="notice notice-error"><p style="font-size:16px;"><strong>❌ La fonction N\'EXISTE PAS !</strong></p></div>';
+		echo '<p>Cela signifie que le fichier <code>helpers.php</code> n\'a pas été chargé correctement ou que le cache PHP n\'a pas été vidé.</p>';
+		echo '<p><strong>Solution :</strong> Videz le cache OPcache ou redémarrez PHP-FPM/Apache.</p>';
+	}
+
+	echo '</div>';
 }
