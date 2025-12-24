@@ -125,12 +125,8 @@ add_shortcode('retards_verif',function(){
                     ssr_log('Reset réussi pour ' . $reset_date . ' par ' . $verifier_name . ' - ' . intval($deleted) . ' lignes supprimées', 'info', 'verification');
                 }
 
-                // Rediriger vers la même page pour rafraîchir les données
-                $current_url = ssr_current_url();
-                $redirect_url = remove_query_arg('date', $current_url);
-                $redirect_url = add_query_arg('date', $reset_date, $redirect_url);
-
-                wp_safe_redirect($redirect_url);
+                // Rediriger vers l'URL actuelle pour rafraîchir (sans modifier la date)
+                wp_safe_redirect(ssr_current_url());
                 exit;
             }
         } else {
