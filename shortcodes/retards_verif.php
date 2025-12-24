@@ -102,46 +102,63 @@ add_shortcode('retards_verif',function(){
             ssr_log('DEBUG: reset_date=' . $reset_date, 'info', 'verification');
 
             if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $reset_date)) {
-                $actor_code = (string)$verifier_id; $actor_name = (string)$verifier_name; $now = current_time('mysql');
-
-                ssr_log('DEBUG: Début archive pour ' . $reset_date, 'info', 'verification');
-
-                // Archive tout
-                $sql_insert_archive = $wpdb->prepare("
-                  INSERT INTO `$ver_audit`
-                  (user_identifier,class_code,last_name,first_name,date_retard,
-                   status_old,status_new,verified_at_old,verified_at_new,
-                   verified_by_code_new,verified_by_name_new,
-                   action,actor_code,actor_name,action_at,meta)
-                  SELECT v.user_identifier, v.class_code, v.last_name, v.first_name, v.date_retard,
-                         v.status, NULL, v.verified_at, NULL,
-                         NULL, NULL,
-                         'reset', %s, %s, %s, NULL
-                  FROM `$ver` v
-                  WHERE v.date_retard = %s
-                ", $actor_code, $actor_name, $now, $reset_date);
-                $ok_archive = $wpdb->query($sql_insert_archive);
-
-                ssr_log('DEBUG: Archive résultat=' . intval($ok_archive), 'info', 'verification');
-
-                // Supprime
-                $deleted = $wpdb->delete($ver, ['date_retard' => $reset_date], ['%s']);
-
-                ssr_log('DEBUG: Delete résultat=' . var_export($deleted, true) . ', error=' . $wpdb->last_error, 'info', 'verification');
-
-                if ($deleted === false) {
-                    $message = "<div style='padding:10px;margin:10px 0;background:#fdeaea;color:#b00020;border-radius:6px;'>Erreur SQL : "
-                             . esc_html($wpdb->last_error) . "</div>";
-                    ssr_log('ERREUR Reset: ' . $wpdb->last_error, 'error', 'verification');
+                // Calculer les dates à réinitialiser selon la logique métier
+                $dates_to_reset = [];
+                if (function_exists('ssr_prev_days_for_check')) {
+                    $dates_to_reset = ssr_prev_days_for_check($reset_date);
                 } else {
-                    // Log de succès
-                    ssr_log('Reset réussi pour ' . $reset_date . ' par ' . $verifier_name . ' - ' . intval($deleted) . ' lignes supprimées', 'info', 'verification');
-
-                    // Rediriger vers l'URL actuelle pour rafraîchir (sans modifier la date)
-                    ssr_log('DEBUG: Redirection vers ' . ssr_current_url(), 'info', 'verification');
-                    wp_safe_redirect(ssr_current_url());
-                    exit;
+                    $dates_to_reset = [$reset_date];
                 }
+
+                ssr_log('DEBUG: dates_to_reset=' . implode(',', $dates_to_reset), 'info', 'verification');
+
+                $actor_code = (string)$verifier_id;
+                $actor_name = (string)$verifier_name;
+                $now = current_time('mysql');
+
+                $total_archived = 0;
+                $total_deleted = 0;
+
+                // Pour chaque date à réinitialiser
+                foreach ($dates_to_reset as $d) {
+                    // Archive
+                    $sql_insert_archive = $wpdb->prepare("
+                      INSERT INTO `$ver_audit`
+                      (user_identifier,class_code,last_name,first_name,date_retard,
+                       status_old,status_new,verified_at_old,verified_at_new,
+                       verified_by_code_new,verified_by_name_new,
+                       action,actor_code,actor_name,action_at,meta)
+                      SELECT v.user_identifier, v.class_code, v.last_name, v.first_name, v.date_retard,
+                             v.status, NULL, v.verified_at, NULL,
+                             NULL, NULL,
+                             'reset', %s, %s, %s, NULL
+                      FROM `$ver` v
+                      WHERE v.date_retard = %s
+                    ", $actor_code, $actor_name, $now, $d);
+                    $ok_archive = $wpdb->query($sql_insert_archive);
+                    $total_archived += intval($ok_archive);
+
+                    ssr_log('DEBUG: Archive pour ' . $d . ' = ' . intval($ok_archive) . ' lignes', 'info', 'verification');
+
+                    // Supprime
+                    $deleted = $wpdb->delete($ver, ['date_retard' => $d], ['%s']);
+
+                    if ($deleted === false) {
+                        ssr_log('ERREUR Delete pour ' . $d . ': ' . $wpdb->last_error, 'error', 'verification');
+                    } else {
+                        $total_deleted += intval($deleted);
+                        ssr_log('DEBUG: Delete pour ' . $d . ' = ' . intval($deleted) . ' lignes', 'info', 'verification');
+                    }
+                }
+
+                // Log final
+                ssr_log('Reset réussi pour vérification ' . $reset_date . ' par ' . $verifier_name . ' - ' . $total_deleted . ' lignes supprimées (dates: ' . implode(',', $dates_to_reset) . ')', 'info', 'verification');
+
+                // Rediriger vers l'URL actuelle pour rafraîchir
+                ssr_log('DEBUG: Redirection vers ' . ssr_current_url(), 'info', 'verification');
+                wp_safe_redirect(ssr_current_url());
+                exit;
+
             } else {
                 $message = "<div style='padding:10px;margin:10px 0;background:#fdeaea;color:#b00020;border-radius:6px;'>Date invalide.</div>";
                 ssr_log('ERREUR Reset: Date invalide ' . $reset_date, 'error', 'verification');
