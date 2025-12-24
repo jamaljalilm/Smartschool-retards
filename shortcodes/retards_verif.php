@@ -126,7 +126,10 @@ add_shortcode('retards_verif',function(){
                 }
 
                 // Rediriger vers la même page pour rafraîchir les données
-                $redirect_url = add_query_arg('date', $reset_date, get_permalink());
+                $current_url = ssr_current_url();
+                $redirect_url = remove_query_arg('date', $current_url);
+                $redirect_url = add_query_arg('date', $reset_date, $redirect_url);
+
                 wp_safe_redirect($redirect_url);
                 exit;
             }
