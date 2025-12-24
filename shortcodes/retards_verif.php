@@ -120,11 +120,15 @@ add_shortcode('retards_verif',function(){
                 $message = "<div style='padding:10px;margin:10px 0;background:#fdeaea;color:#b00020;border-radius:6px;'>Erreur SQL : "
                          . esc_html($wpdb->last_error) . "</div>";
             } else {
-                $message = "<div style='padding:10px;margin:10px 0;background:#fff8e1;color:#8a6d3b;border-radius:6px;'>"
-                         . "♻️ <strong>" . esc_html($reset_date) . "</strong> réinitialisée par "
-                         . "<strong>" . esc_html($verifier_name ?: ('#'.$verifier_id)) . "</strong>. "
-                         . "Archivage: " . intval($ok_archive) . " — Suppression: " . intval($deleted) . ".</div>";
-                if ($reset_date !== $date) { $date = $reset_date; }
+                // Log de succès
+                if (function_exists('ssr_log')) {
+                    ssr_log('Reset réussi pour ' . $reset_date . ' par ' . $verifier_name . ' - ' . intval($deleted) . ' lignes supprimées', 'info', 'verification');
+                }
+
+                // Rediriger vers la même page pour rafraîchir les données
+                $redirect_url = add_query_arg('date', $reset_date, get_permalink());
+                wp_safe_redirect($redirect_url);
+                exit;
             }
         } else {
             $message = "<div style='padding:10px;margin:10px 0;background:#fdeaea;color:#b00020;border-radius:6px;'>Date invalide.</div>";
