@@ -92,45 +92,62 @@ add_shortcode('retards_verif',function(){
 
 
     /* ===== RESET jour (avec archivage) ===== */
-    if (isset($_POST['ssr_reset_nonce']) && wp_verify_nonce($_POST['ssr_reset_nonce'],'ssr_reset_day')) {
-        $reset_date = sanitize_text_field($_POST['reset_date'] ?? '');
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $reset_date)) {
-            $actor_code = (string)$verifier_id; $actor_name = (string)$verifier_name; $now = current_time('mysql');
+    if (isset($_POST['ssr_reset_nonce'])) {
+        ssr_log('DEBUG: Reset POST détecté, nonce présent', 'info', 'verification');
 
-            // Archive tout
-            $sql_insert_archive = $wpdb->prepare("
-              INSERT INTO `$ver_audit`
-              (user_identifier,class_code,last_name,first_name,date_retard,
-               status_old,status_new,verified_at_old,verified_at_new,
-               verified_by_code_new,verified_by_name_new,
-               action,actor_code,actor_name,action_at,meta)
-              SELECT v.user_identifier, v.class_code, v.last_name, v.first_name, v.date_retard,
-                     v.status, NULL, v.verified_at, NULL,
-                     NULL, NULL,
-                     'reset', %s, %s, %s, NULL
-              FROM `$ver` v
-              WHERE v.date_retard = %s
-            ", $actor_code, $actor_name, $now, $reset_date);
-            $ok_archive = $wpdb->query($sql_insert_archive);
+        if (wp_verify_nonce($_POST['ssr_reset_nonce'],'ssr_reset_day')) {
+            ssr_log('DEBUG: Nonce valide', 'info', 'verification');
 
-            // Supprime
-            $deleted = $wpdb->delete($ver, ['date_retard' => $reset_date], ['%s']);
+            $reset_date = sanitize_text_field($_POST['reset_date'] ?? '');
+            ssr_log('DEBUG: reset_date=' . $reset_date, 'info', 'verification');
 
-            if ($deleted === false) {
-                $message = "<div style='padding:10px;margin:10px 0;background:#fdeaea;color:#b00020;border-radius:6px;'>Erreur SQL : "
-                         . esc_html($wpdb->last_error) . "</div>";
-            } else {
-                // Log de succès
-                if (function_exists('ssr_log')) {
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $reset_date)) {
+                $actor_code = (string)$verifier_id; $actor_name = (string)$verifier_name; $now = current_time('mysql');
+
+                ssr_log('DEBUG: Début archive pour ' . $reset_date, 'info', 'verification');
+
+                // Archive tout
+                $sql_insert_archive = $wpdb->prepare("
+                  INSERT INTO `$ver_audit`
+                  (user_identifier,class_code,last_name,first_name,date_retard,
+                   status_old,status_new,verified_at_old,verified_at_new,
+                   verified_by_code_new,verified_by_name_new,
+                   action,actor_code,actor_name,action_at,meta)
+                  SELECT v.user_identifier, v.class_code, v.last_name, v.first_name, v.date_retard,
+                         v.status, NULL, v.verified_at, NULL,
+                         NULL, NULL,
+                         'reset', %s, %s, %s, NULL
+                  FROM `$ver` v
+                  WHERE v.date_retard = %s
+                ", $actor_code, $actor_name, $now, $reset_date);
+                $ok_archive = $wpdb->query($sql_insert_archive);
+
+                ssr_log('DEBUG: Archive résultat=' . intval($ok_archive), 'info', 'verification');
+
+                // Supprime
+                $deleted = $wpdb->delete($ver, ['date_retard' => $reset_date], ['%s']);
+
+                ssr_log('DEBUG: Delete résultat=' . var_export($deleted, true) . ', error=' . $wpdb->last_error, 'info', 'verification');
+
+                if ($deleted === false) {
+                    $message = "<div style='padding:10px;margin:10px 0;background:#fdeaea;color:#b00020;border-radius:6px;'>Erreur SQL : "
+                             . esc_html($wpdb->last_error) . "</div>";
+                    ssr_log('ERREUR Reset: ' . $wpdb->last_error, 'error', 'verification');
+                } else {
+                    // Log de succès
                     ssr_log('Reset réussi pour ' . $reset_date . ' par ' . $verifier_name . ' - ' . intval($deleted) . ' lignes supprimées', 'info', 'verification');
-                }
 
-                // Rediriger vers l'URL actuelle pour rafraîchir (sans modifier la date)
-                wp_safe_redirect(ssr_current_url());
-                exit;
+                    // Rediriger vers l'URL actuelle pour rafraîchir (sans modifier la date)
+                    ssr_log('DEBUG: Redirection vers ' . ssr_current_url(), 'info', 'verification');
+                    wp_safe_redirect(ssr_current_url());
+                    exit;
+                }
+            } else {
+                $message = "<div style='padding:10px;margin:10px 0;background:#fdeaea;color:#b00020;border-radius:6px;'>Date invalide.</div>";
+                ssr_log('ERREUR Reset: Date invalide ' . $reset_date, 'error', 'verification');
             }
         } else {
-            $message = "<div style='padding:10px;margin:10px 0;background:#fdeaea;color:#b00020;border-radius:6px;'>Date invalide.</div>";
+            ssr_log('ERREUR Reset: Nonce invalide', 'error', 'verification');
         }
     }
 
