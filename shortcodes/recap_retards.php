@@ -195,6 +195,12 @@ add_shortcode('recap_retards', function($atts){
     $byClass = [];
     foreach ($students as $s) {
         $cls = $s['class_code'] ?: '—';
+
+        // Log si class_code est vide
+        if (empty($s['class_code'])) {
+            ssr_log('DEBUG recap_retards: Élève sans class_code - user=' . ($s['user_identifier'] ?? 'N/A') . ', nom=' . ($s['last_name'] ?? '') . ' ' . ($s['first_name'] ?? ''), 'warning', 'recap');
+        }
+
         $byClass[$cls][] = $s;
     }
     ksort($byClass, SORT_NATURAL | SORT_FLAG_CASE);
