@@ -510,6 +510,13 @@ add_shortcode('recap_calendrier', function($atts){
 			$isOk     = !$isFuture && $infoOk && ($infoOk['cnt'] > 0);
 			$counts   = $countsByDay[$dstr] ?? ['present'=>0, 'absent'=>0];
 
+			// DEBUG: Log si counts not found
+			if ($isOk && (!isset($countsByDay[$dstr]) || ($counts['present'] == 0 && $counts['absent'] == 0))) {
+				if (function_exists('ssr_log')) {
+					ssr_log('Calendrier - Date vérifiée mais compteurs manquants pour ' . $dstr . ' - countsByDay keys: ' . implode(',', array_keys($countsByDay)), 'warning', 'calendar-debug');
+				}
+			}
+
 			// Nom “à jour” via code PIN
 			$whoCode     = $infoOk['code'] ?? '';
 			$whoNameOld  = $infoOk['who']  ?? '';
