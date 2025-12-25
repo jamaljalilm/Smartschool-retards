@@ -100,14 +100,22 @@ add_action('wp_ajax_ssr_save_sanction_date', function() {
 		}
 
 		// Envoyer la notification automatique pour nouvelle sanction
+		ssr_log('DEBUG: Tentative envoi notification sanction pour ' . $user_identifier, 'info', 'sanctions');
+
 		if (function_exists('ssr_send_sanction_notification')) {
-			ssr_send_sanction_notification([
+			ssr_log('DEBUG: Fonction ssr_send_sanction_notification existe, appel en cours...', 'info', 'sanctions');
+
+			$notification_result = ssr_send_sanction_notification([
 				'user_identifier' => $user_identifier,
 				'firstname' => $firstname,
 				'lastname' => $lastname,
 				'nb_absences' => $nb_absences,
 				'sanction_type' => $sanction_type,
 			]);
+
+			ssr_log('DEBUG: Résultat notification = ' . var_export($notification_result, true), 'info', 'sanctions');
+		} else {
+			ssr_log('ERREUR: Fonction ssr_send_sanction_notification n\'existe pas!', 'error', 'sanctions');
 		}
 	}
 

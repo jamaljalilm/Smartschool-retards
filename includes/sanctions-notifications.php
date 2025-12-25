@@ -14,8 +14,12 @@ if (!function_exists('ssr_send_sanction_notification')) {
      * @return bool True si envoyé avec succès, false sinon
      */
     function ssr_send_sanction_notification($sanction_data) {
+        ssr_log('DEBUG: ssr_send_sanction_notification() appelée', 'info', 'sanctions');
+
         // Vérifier si l'envoi automatique est activé
         $auto_send = get_option('ssr_sanction_auto_send', '1');
+        ssr_log('DEBUG: auto_send = ' . var_export($auto_send, true), 'info', 'sanctions');
+
         if ($auto_send !== '1') {
             ssr_log('Envoi automatique désactivé pour les sanctions', 'info', 'sanctions');
             return false;
@@ -27,6 +31,8 @@ if (!function_exists('ssr_send_sanction_notification')) {
         $lastname = $sanction_data['lastname'] ?? '';
         $nb_absences = intval($sanction_data['nb_absences'] ?? 0);
         $sanction_type = $sanction_data['sanction_type'] ?? '';
+
+        ssr_log('DEBUG: Données extraites - user=' . $user_identifier . ', type=' . $sanction_type, 'info', 'sanctions');
 
         // Validation
         if (empty($user_identifier) || empty($sanction_type)) {
@@ -46,6 +52,8 @@ if (!function_exists('ssr_send_sanction_notification')) {
         // Récupérer le template de message
         $title = get_option('ssr_sanction_message_title', 'Notification de sanction');
         $body = get_option('ssr_sanction_message_body', '');
+
+        ssr_log('DEBUG: Template title=' . $title . ', body length=' . strlen($body), 'info', 'sanctions');
 
         if (empty($body)) {
             ssr_log('Template de message de sanction vide', 'error', 'sanctions');
@@ -68,19 +76,26 @@ if (!function_exists('ssr_send_sanction_notification')) {
         $send_to_student = get_option('ssr_sanction_send_to_student', '1');
         $send_to_parents = get_option('ssr_sanction_send_to_parents', '1');
 
+        ssr_log('DEBUG: send_to_student=' . $send_to_student . ', send_to_parents=' . $send_to_parents, 'info', 'sanctions');
+
         // Récupérer le sender identifier
         $sender = get_option(SSR_OPT_SENDER, 'Null');
+        ssr_log('DEBUG: sender=' . $sender, 'info', 'sanctions');
 
         $success_count = 0;
         $error_count = 0;
 
         // Envoyer à l'élève
+        ssr_log('DEBUG: Vérification envoi élève - send_to_student=' . $send_to_student . ', function_exists=' . (function_exists('ssr_api_send_message') ? 'YES' : 'NO'), 'info', 'sanctions');
+
         if ($send_to_student === '1' && function_exists('ssr_api_send_message')) {
             // Préfixer avec INDL. si nécessaire (comme dans api.php)
             $student_identifier = $user_identifier;
             if (!preg_match('/^INDL\./i', $student_identifier)) {
                 $student_identifier = 'INDL.' . $student_identifier;
             }
+
+            ssr_log('DEBUG: Envoi message à élève ' . $student_identifier . ', title=' . $title_final, 'info', 'sanctions');
 
             $result = ssr_api_send_message(
                 $student_identifier,
