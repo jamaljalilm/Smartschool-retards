@@ -105,8 +105,19 @@ function ssr_fetch_fiche_eleve_cb(){
     $class = '';
     if (function_exists('ssr_extract_official_class_from_user')) {
         $class = ssr_extract_official_class_from_user($user);
+        if (!$class) {
+            ssr_log('DEBUG fiche: ssr_extract_official_class_from_user returned null for ' . $uid, 'warning', 'recap');
+            ssr_log('DEBUG fiche: user groups = ' . json_encode($user['groups'] ?? 'NO GROUPS'), 'info', 'recap');
+        }
     }
-    if (!$class && isset($user['class'])) $class = $user['class'];
+    if (!$class && isset($user['class'])) {
+        $class = $user['class'];
+        ssr_log('DEBUG fiche: Used fallback $user[class] = ' . $class . ' for ' . $uid, 'info', 'recap');
+    }
+
+    if (!$class) {
+        ssr_log('DEBUG fiche: NO CLASS FOUND for ' . $uid . ' - user data: ' . json_encode($user), 'warning', 'recap');
+    }
 
  // -------- Données vérif depuis la DB --------
 global $wpdb;
