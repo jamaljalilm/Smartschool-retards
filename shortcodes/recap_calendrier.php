@@ -223,16 +223,29 @@ add_shortcode('recap_calendrier', function($atts){
 
     // Compteurs présent/absent par jour (même logique : calcule date de vérification)
     $countsByDay = [];
+
+    if (function_exists('ssr_log')) {
+        ssr_log('Calendrier - status_col détecté: ' . ($status_col ? $status_col : 'NULL/VIDE'), 'info', 'calendar-debug');
+    }
+
     if ($status_col) {
         $sqlCnt = "SELECT DATE(`$date_col`) AS date_retard,
                           LOWER(`$status_col`) AS status
                    FROM `$table`
                    WHERE `$verified_at` IS NOT NULL";
+
+        if (function_exists('ssr_log')) {
+            ssr_log('Calendrier - SQL compteurs: ' . $sqlCnt, 'info', 'calendar-debug');
+        }
+
         $cntRows = $wpdb->get_results($sqlCnt, ARRAY_A);
         $cntRows = is_array($cntRows) ? $cntRows : [];
 
         if (function_exists('ssr_log')) {
             ssr_log('Calendrier - Compteurs query retourné ' . count($cntRows) . ' lignes', 'info', 'calendar-debug');
+            if (count($cntRows) > 0) {
+                ssr_log('Calendrier - Premier résultat: ' . print_r($cntRows[0], true), 'info', 'calendar-debug');
+            }
             ssr_log('Calendrier - firstDay=' . $firstDay . ', lastDay=' . $lastDay, 'info', 'calendar-debug');
         }
 
