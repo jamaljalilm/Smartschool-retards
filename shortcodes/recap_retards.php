@@ -103,20 +103,29 @@ function ssr_fetch_fiche_eleve_cb(){
     $name = trim($last_name . ' ' . $first_name);
 
     $class = '';
+
+    // 1) Essayer d'extraire depuis l'API
     if (function_exists('ssr_extract_official_class_from_user')) {
         $class = ssr_extract_official_class_from_user($user);
-        if (!$class) {
-            ssr_log('DEBUG fiche: ssr_extract_official_class_from_user returned null for ' . $uid, 'warning', 'recap');
-            ssr_log('DEBUG fiche: user groups = ' . json_encode($user['groups'] ?? 'NO GROUPS'), 'info', 'recap');
-        }
     }
     if (!$class && isset($user['class'])) {
         $class = $user['class'];
-        ssr_log('DEBUG fiche: Used fallback $user[class] = ' . $class . ' for ' . $uid, 'info', 'recap');
     }
 
+    // 2) Fallback : récupérer depuis la DB si l'API échoue
     if (!$class) {
-        ssr_log('DEBUG fiche: NO CLASS FOUND for ' . $uid . ' - user data: ' . json_encode($user), 'warning', 'recap');
+        global $wpdb;
+        $ver_table = $wpdb->prefix . "smartschool_retards_verif";
+        $class_from_db = $wpdb->get_var($wpdb->prepare(
+            "SELECT class_code FROM {$ver_table} WHERE user_identifier = %s LIMIT 1",
+            $uid
+        ));
+        if ($class_from_db) {
+            $class = $class_from_db;
+            ssr_log('DEBUG fiche: Classe récupérée depuis DB = ' . $class . ' pour ' . $uid, 'info', 'recap');
+        } else {
+            ssr_log('DEBUG fiche: Aucune classe trouvée (ni API ni DB) pour ' . $uid, 'warning', 'recap');
+        }
     }
 
  // -------- Données vérif depuis la DB --------
