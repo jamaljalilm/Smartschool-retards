@@ -35,6 +35,10 @@ function ssr_admin_sanction_message_config_render() {
         $send_to_parents = isset($_POST['ssr_sanction_send_to_parents']) ? '1' : '0';
         update_option('ssr_sanction_send_to_parents', $send_to_parents);
 
+        // Sauvegarder l'identifiant expéditeur
+        $sender_id = sanitize_text_field($_POST['ssr_sanction_sender'] ?? 'R002');
+        update_option(SSR_OPT_SENDER, $sender_id);
+
         echo '<div class="notice notice-success is-dismissible"><p>✅ Configuration des messages de sanction sauvegardée avec succès.</p></div>';
     }
 
@@ -79,6 +83,7 @@ function ssr_admin_sanction_message_config_render() {
     $auto_send = get_option('ssr_sanction_auto_send', '1');
     $send_to_student = get_option('ssr_sanction_send_to_student', '1');
     $send_to_parents = get_option('ssr_sanction_send_to_parents', '1');
+    $sender = get_option(SSR_OPT_SENDER, 'R002');
 
     ?>
     <div class="wrap">
@@ -139,6 +144,24 @@ function ssr_admin_sanction_message_config_render() {
                         </fieldset>
                         <p class="description">
                             Sélectionnez qui doit recevoir les notifications de sanction.
+                        </p>
+                    </td>
+                </tr>
+
+                <!-- Identifiant expéditeur -->
+                <tr>
+                    <th scope="row">
+                        <label for="ssr_sanction_sender">Identifiant expéditeur</label>
+                    </th>
+                    <td>
+                        <input type="text"
+                               name="ssr_sanction_sender"
+                               id="ssr_sanction_sender"
+                               value="<?php echo esc_attr($sender); ?>"
+                               class="regular-text"
+                               placeholder="R002">
+                        <p class="description">
+                            Compte Smartschool utilisé pour envoyer les messages de sanction (ex: R002, S334, etc.)
                         </p>
                     </td>
                 </tr>
