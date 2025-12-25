@@ -231,8 +231,14 @@ add_shortcode('recap_calendrier', function($atts){
         $cntRows = $wpdb->get_results($sqlCnt, ARRAY_A);
         $cntRows = is_array($cntRows) ? $cntRows : [];
 
+        if (function_exists('ssr_log')) {
+            ssr_log('Calendrier - Compteurs query retourné ' . count($cntRows) . ' lignes', 'info', 'calendar-debug');
+            ssr_log('Calendrier - firstDay=' . $firstDay . ', lastDay=' . $lastDay, 'info', 'calendar-debug');
+        }
+
         // Regroupe par date de vérification calculée
         $groupedCounts = [];
+        $filtered_out = 0;
         foreach ($cntRows as $row) {
             $date_retard = $row['date_retard'];
             $status = $row['status'];
@@ -245,6 +251,7 @@ add_shortcode('recap_calendrier', function($atts){
 
             // Filtre par le mois affiché
             if ($verif_date < $firstDay || $verif_date > $lastDay) {
+                $filtered_out++;
                 continue;
             }
 
@@ -263,6 +270,7 @@ add_shortcode('recap_calendrier', function($atts){
 
         // DEBUG: Log des compteurs
         if (function_exists('ssr_log')) {
+            ssr_log('Calendrier - ' . $filtered_out . ' lignes filtrées (hors période), ' . count($groupedCounts) . ' dates avec compteurs', 'info', 'calendar-debug');
             ssr_log('Calendrier - Compteurs: ' . print_r($countsByDay, true), 'info', 'calendar-debug');
         }
     }
