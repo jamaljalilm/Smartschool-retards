@@ -7,10 +7,15 @@ if (!function_exists('ssr_get_all_students')) {
    * Retourne des entrées: user_identifier, class_code, last_name, first_name
    */
   function ssr_get_all_students(){
+    ssr_log('DEBUG ssr_get_all_students: Début de la fonction', 'info', 'recap');
+
     // 0) Hook/Provider externe (si toi/ton plugin en expose un)
     if (function_exists('ssr_students_provider')) {
       $out = ssr_students_provider();
-      if (is_array($out) && !empty($out)) return $out;
+      if (is_array($out) && !empty($out)) {
+        ssr_log('DEBUG ssr_get_all_students: Retour via provider externe (' . count($out) . ' élèves)', 'info', 'recap');
+        return $out;
+      }
     }
 
     global $wpdb;
@@ -22,9 +27,11 @@ if (!function_exists('ssr_get_all_students')) {
       "SHOW TABLES LIKE %s", $wpdb->esc_like($t_accounts)
     )) === $t_accounts;
 
+    ssr_log('DEBUG ssr_get_all_students: Table accounts existe? ' . ($has_accounts ? 'OUI' : 'NON'), 'info', 'recap');
+
     if ($has_accounts) {
       $rows = $wpdb->get_results("
-        SELECT 
+        SELECT
           CAST(user_identifier AS CHAR)   AS user_identifier,
           CAST(class_code AS CHAR)        AS class_code,
           CAST(last_name AS CHAR)         AS last_name,
@@ -32,6 +39,7 @@ if (!function_exists('ssr_get_all_students')) {
         FROM {$t_accounts}
         WHERE (user_identifier IS NOT NULL AND user_identifier <> '')
       ", ARRAY_A);
+      ssr_log('DEBUG ssr_get_all_students: Query accounts retourné ' . ($rows ? count($rows) : 0) . ' lignes', 'info', 'recap');
       if ($rows) return $rows;
     }
 
@@ -40,6 +48,8 @@ if (!function_exists('ssr_get_all_students')) {
     $has_verif = $wpdb->get_var($wpdb->prepare(
       "SHOW TABLES LIKE %s", $wpdb->esc_like($t_verif)
     )) === $t_verif;
+
+    ssr_log('DEBUG ssr_get_all_students: Table verif existe? ' . ($has_verif ? 'OUI' : 'NON'), 'info', 'recap');
 
     if ($has_verif) {
       $rows = $wpdb->get_results("
@@ -51,10 +61,12 @@ if (!function_exists('ssr_get_all_students')) {
         FROM {$t_verif}
         WHERE (user_identifier IS NOT NULL AND user_identifier <> '')
       ", ARRAY_A);
+      ssr_log('DEBUG ssr_get_all_students: Query verif retourné ' . ($rows ? count($rows) : 0) . ' lignes', 'info', 'recap');
       if ($rows) return $rows;
     }
 
     // 3) Dernier filet: vide (mais évite le fatal)
+    ssr_log('DEBUG ssr_get_all_students: Aucune source de données trouvée, retour tableau vide', 'warning', 'recap');
     return [];
   }
 }
@@ -172,6 +184,12 @@ add_shortcode('recap_retards', function($atts){
 
     $fiche_url = esc_url(home_url($a['fiche']));
     $students = ssr_get_all_students();
+
+    // Debug logging
+    ssr_log('DEBUG recap_retards: Nombre d\'élèves récupérés = ' . count($students), 'info', 'recap');
+    if (empty($students)) {
+        ssr_log('DEBUG recap_retards: AUCUN élève trouvé!', 'warning', 'recap');
+    }
 
     // Regrouper par classe
     $byClass = [];
