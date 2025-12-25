@@ -89,13 +89,22 @@ if (!function_exists('ssr_send_sanction_notification')) {
         ssr_log('DEBUG: Vérification envoi élève - send_to_student=' . $send_to_student . ', function_exists=' . (function_exists('ssr_api_send_message') ? 'YES' : 'NO'), 'info', 'sanctions');
 
         if ($send_to_student === '1' && function_exists('ssr_api_send_message')) {
+            ssr_log('DEBUG: Entrée dans le bloc envoi élève', 'info', 'sanctions');
+
             // Préfixer avec INDL. si nécessaire (comme dans api.php)
             $student_identifier = $user_identifier;
+            ssr_log('DEBUG: student_identifier initial = ' . $student_identifier, 'info', 'sanctions');
+
             if (!preg_match('/^INDL\./i', $student_identifier)) {
                 $student_identifier = 'INDL.' . $student_identifier;
+                ssr_log('DEBUG: Préfixe INDL ajouté', 'info', 'sanctions');
+            } else {
+                ssr_log('DEBUG: Préfixe INDL déjà présent', 'info', 'sanctions');
             }
 
-            ssr_log('DEBUG: Envoi message à élève ' . $student_identifier . ', title=' . $title_final, 'info', 'sanctions');
+            ssr_log('DEBUG: title_final = ' . substr($title_final, 0, 50), 'info', 'sanctions');
+            ssr_log('DEBUG: body_final length = ' . strlen($body_final), 'info', 'sanctions');
+            ssr_log('DEBUG: Appel de ssr_api_send_message...', 'info', 'sanctions');
 
             $result = ssr_api_send_message(
                 $student_identifier,
@@ -106,6 +115,8 @@ if (!function_exists('ssr_send_sanction_notification')) {
                 0,     // coaccount: compte principal
                 false  // copyToLVS
             );
+
+            ssr_log('DEBUG: ssr_api_send_message retourné, is_wp_error=' . (is_wp_error($result) ? 'YES' : 'NO'), 'info', 'sanctions');
 
             if (is_wp_error($result)) {
                 ssr_log(
