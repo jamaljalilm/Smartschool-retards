@@ -9,6 +9,15 @@ Text Domain: smartschool-retards
 
 if (!defined('ABSPATH')) exit;
 
+// Fonction temporaire pour éviter l'erreur du hook orphelin
+// (sera supprimée une fois le hook nettoyé)
+if (!function_exists('ssr_add_date_verification_column')) {
+    function ssr_add_date_verification_column() {
+        // Fonction vide - ne fait rien, juste pour éviter l'erreur fatale
+        // Le hook sera supprimé par le code de nettoyage ci-dessous
+    }
+}
+
 // Define plugin path constants
 define('SSR_PLUGIN_FILE', __FILE__);
 define('SSR_PLUGIN_DIR', plugin_dir_path(__FILE__));
