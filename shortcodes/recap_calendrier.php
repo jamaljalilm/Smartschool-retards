@@ -188,7 +188,7 @@ add_shortcode('recap_calendrier', function($atts){
 			}
 
 			$groupedByVerifDate[$verif_date]['cnt']++;
-			$groupedByVerifDate[$verif_date]['verified_at_list'][] = $verified_at;
+			$groupedByVerifDate[$verif_date]['verified_at_list'][] = $row_verified_at;
 			$groupedByVerifDate[$verif_date]['verifier_name_list'][] = $row['verifier_name'];
 			$groupedByVerifDate[$verif_date]['verifier_code_list'][] = $row['verifier_code'];
 		}
