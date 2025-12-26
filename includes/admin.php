@@ -262,7 +262,7 @@ function ssr_admin_page_render(){
         <?php echo $verif_msg; ?>
         <table class="widefat striped" style="margin-bottom:8px;">
           <thead>
-            <tr><th>ID</th><th>Nom</th><th>Actif</th><th>Créé</th><th>Actions</th></tr>
+            <tr><th>ID</th><th>Nom</th><th>Actif</th><th>Accès Suivi</th><th>Créé</th><th>Actions</th></tr>
           </thead>
           <tbody>
           <?php if ($rows): foreach($rows as $r): ?>
@@ -270,6 +270,10 @@ function ssr_admin_page_render(){
               <td><?php echo intval($r['id']); ?></td>
               <td><?php echo esc_html($r['display_name']); ?></td>
               <td><?php echo intval($r['is_active']) ? 'Oui' : '<span style="color:#b00020">Non</span>'; ?></td>
+              <td><?php
+                $has_access = isset($r['can_access_suivi']) ? intval($r['can_access_suivi']) : 0;
+                echo $has_access ? '<span style="color:#10b981;font-weight:600;">✓ Oui</span>' : '<span style="color:#9ca3af;">— Non</span>';
+              ?></td>
               <td><?php echo esc_html($r['created_at']); ?></td>
               <td>
                 <a class="button" href="<?php echo esc_url(add_query_arg(['page'=>'ssr-settings','edit'=>intval($r['id'])], admin_url('admin.php'))); ?>">Modifier</a>
@@ -281,7 +285,7 @@ function ssr_admin_page_render(){
               </td>
             </tr>
           <?php endforeach; else: ?>
-            <tr><td colspan="5">Aucun vérificateur pour l’instant.</td></tr>
+            <tr><td colspan="6">Aucun vérificateur pour l'instant.</td></tr>
           <?php endif; ?>
           </tbody>
         </table>
