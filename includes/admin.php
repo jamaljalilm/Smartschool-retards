@@ -128,17 +128,23 @@ function ssr_admin_page_render(){
         if (isset($_POST['ssr_verifier_save'])) {
             check_admin_referer('ssr_verifier_save', 'ssr_verifier_nonce');
 
-            $vid       = isset($_POST['verifier_id']) ? intval($_POST['verifier_id']) : 0;
-            $name      = isset($_POST['display_name']) ? sanitize_text_field($_POST['display_name']) : '';
-            $is_active = !empty($_POST['is_active']) ? 1 : 0;
-            $pin1      = isset($_POST['pin1']) ? sanitize_text_field($_POST['pin1']) : '';
-            $pin2      = isset($_POST['pin2']) ? sanitize_text_field($_POST['pin2']) : '';
+            $vid             = isset($_POST['verifier_id']) ? intval($_POST['verifier_id']) : 0;
+            $name            = isset($_POST['display_name']) ? sanitize_text_field($_POST['display_name']) : '';
+            $is_active       = !empty($_POST['is_active']) ? 1 : 0;
+            $can_access_suivi = !empty($_POST['can_access_suivi']) ? 1 : 0;
+            $pin1            = isset($_POST['pin1']) ? sanitize_text_field($_POST['pin1']) : '';
+            $pin2            = isset($_POST['pin2']) ? sanitize_text_field($_POST['pin2']) : '';
 
             if (!$name) {
                 $verif_msg = '<div class="notice notice-error"><p>Le nom est obligatoire.</p></div>';
             } else {
-                $data = ['display_name'=>$name, 'is_active'=>$is_active, 'updated_at'=>current_time('mysql')];
-                $fmt  = ['%s','%d','%s'];
+                $data = [
+                    'display_name' => $name,
+                    'is_active' => $is_active,
+                    'can_access_suivi' => $can_access_suivi,
+                    'updated_at' => current_time('mysql')
+                ];
+                $fmt  = ['%s','%d','%d','%s'];
 
                 if ($pin1 || $pin2) {
                     if ($pin1 !== $pin2) {
@@ -293,6 +299,13 @@ function ssr_admin_page_render(){
             <tr>
               <th><label for="is_active">Actif</label></th>
               <td><label><input type="checkbox" id="is_active" name="is_active" <?php checked($edit_row ? intval($edit_row['is_active']) : 1); ?>/> Activer ce vérificateur</label></td>
+            </tr>
+            <tr>
+              <th><label for="can_access_suivi">Accès page Suivi</label></th>
+              <td>
+                <label><input type="checkbox" id="can_access_suivi" name="can_access_suivi" <?php checked($edit_row ? intval($edit_row['can_access_suivi'] ?? 0) : 0); ?>/> Autoriser l'accès à la page Suivi</label>
+                <p class="description">Si coché, ce vérificateur pourra voir le menu "Suivi" et accéder à l'historique des vérifications.</p>
+              </td>
             </tr>
             <tr>
               <th><label for="pin1">Nouveau PIN</label></th>

@@ -234,3 +234,30 @@ function ssr_prev_days_for_check($date = null) {
 
     return $dates;
 }}
+
+/* ============ Permissions ============ */
+if (!function_exists('ssr_can_access_suivi')) {
+    /**
+     * Vérifie si le vérificateur actuel a la permission d'accéder à la page suivi
+     *
+     * @return bool True si le vérificateur a la permission, false sinon
+     */
+    function ssr_can_access_suivi() {
+        if (!function_exists('ssr_is_logged_in_pin') || !ssr_is_logged_in_pin()) {
+            return false;
+        }
+
+        $verifier = ssr_current_verifier();
+        if (!$verifier || !isset($verifier['id'])) {
+            return false;
+        }
+
+        global $wpdb;
+        $can_access = $wpdb->get_var($wpdb->prepare(
+            "SELECT can_access_suivi FROM " . SSR_T_VERIFIERS . " WHERE id = %d",
+            $verifier['id']
+        ));
+
+        return (bool) $can_access;
+    }
+}

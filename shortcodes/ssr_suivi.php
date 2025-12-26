@@ -4,6 +4,15 @@ if (!defined('ABSPATH')) exit;
 add_shortcode('ssr_suivi', function(){
 	if(!ssr_is_logged_in_pin())
         return ssr_locked_message('/connexion-verificateur');
+
+    // Vérifier les permissions d'accès
+    if (function_exists('ssr_can_access_suivi') && !ssr_can_access_suivi()) {
+        return '<div class="ssr-notice ssr-error" style="padding:20px;border:1px solid #fca5a5;background:#fff1f2;border-radius:8px;color:#991b1b;margin:20px 0;">
+            <p style="margin:0;"><strong>Accès refusé</strong></p>
+            <p style="margin:10px 0 0;">Vous n\'avez pas la permission d\'accéder à cette page. Contactez un administrateur si vous pensez qu\'il s\'agit d\'une erreur.</p>
+        </div>';
+    }
+
     global $wpdb;
     $ver = $wpdb->prefix . "smartschool_retards_verif";
     $log = SSR_T_LOG;

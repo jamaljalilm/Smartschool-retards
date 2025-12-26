@@ -79,9 +79,27 @@ function ssr_db_maybe_create_tables(){
         PRIMARY KEY(id)
     ) $charset;";
 
+    $verifiers = SSR_T_VERIFIERS;
+    $sql[] = "CREATE TABLE IF NOT EXISTS $verifiers (
+        id INT NOT NULL AUTO_INCREMENT,
+        display_name VARCHAR(191) NOT NULL,
+        pin_hash VARCHAR(255) NOT NULL,
+        is_active TINYINT(1) NOT NULL DEFAULT 1,
+        can_access_suivi TINYINT(1) NOT NULL DEFAULT 0,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NULL,
+        PRIMARY KEY(id)
+    ) $charset;";
+
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
     foreach($sql as $q){
         dbDelta($q);
+    }
+
+    // Migration: Ajouter la colonne can_access_suivi si elle n'existe pas
+    $cols = $wpdb->get_col("SHOW COLUMNS FROM $verifiers");
+    if (!in_array('can_access_suivi', $cols, true)) {
+        $wpdb->query("ALTER TABLE $verifiers ADD COLUMN can_access_suivi TINYINT(1) NOT NULL DEFAULT 0 AFTER is_active");
     }
 }
 

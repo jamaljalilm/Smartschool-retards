@@ -125,9 +125,12 @@ add_shortcode('ssr_nav', function($atts){
 
     </style>';
 
+    // Vérifier si l'utilisateur a accès au suivi
+    $can_access_suivi = function_exists('ssr_can_access_suivi') && ssr_can_access_suivi();
+
     ob_start(); ?>
     <nav class="ssr-bottom-nav" aria-label="Navigation secondaire">
-        <!-- Ordre: Connexion → Calendrier → Retards → Retenues → Récap → Suivi -->
+        <!-- Ordre: Connexion → Calendrier → Retards → Retenues → Récap → Suivi (si autorisé) -->
         <a href="<?php echo $urls['login']; ?>" class="<?php echo $isActive($a['login'])?'active':''; ?>">
             <?php echo $icon('login','Connexion'); ?><span class="nav-label">Connexion</span>
         </a>
@@ -143,9 +146,11 @@ add_shortcode('ssr_nav', function($atts){
         <a href="<?php echo $urls['recap']; ?>" class="<?php echo $isActive($a['recap'])?'active':''; ?>">
             <?php echo $icon('recap','Récapitulatif'); ?><span class="nav-label">Récap</span>
         </a>
+        <?php if ($can_access_suivi): ?>
         <a href="<?php echo $urls['suivi']; ?>" class="<?php echo $isActive($a['suivi'])?'active':''; ?>">
             <?php echo $icon('suivi','Suivi'); ?><span class="nav-label">Suivi</span>
         </a>
+        <?php endif; ?>
     </nav>
     <?php
     return ob_get_clean();
