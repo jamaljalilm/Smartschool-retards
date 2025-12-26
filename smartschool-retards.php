@@ -49,6 +49,9 @@ register_deactivation_hook(__FILE__, 'ssr_deactivate_segmented');
 function ssr_activate_segmented(){
     ssr_db_maybe_create_tables();
     ssr_cron_maybe_reschedule_daily();
+
+    // Nettoyer les hooks orphelins des anciennes versions
+    remove_action('plugins_loaded', 'ssr_add_date_verification_column');
 }
 
 function ssr_deactivate_segmented(){
@@ -58,6 +61,11 @@ function ssr_deactivate_segmented(){
         wp_unschedule_event($timestamp, $hook);
     }
 }
+
+// Nettoyer les hooks orphelins au chargement (pour les installations existantes)
+add_action('plugins_loaded', function() {
+    remove_action('plugins_loaded', 'ssr_add_date_verification_column');
+}, 1); // Priorité 1 pour s'exécuter avant les autres
 
 // Minimal front-end CSS if needed
 add_action('wp_head', function(){
