@@ -163,7 +163,7 @@ add_shortcode('recap_calendrier', function($atts){
 		$groupedByVerifDate = [];
 		foreach ($allRows as $row) {
 			$date_retard = $row['date_retard'];
-			$verified_at = $row['verified_at'];
+			$row_verified_at = $row['verified_at'];  // Renamed to avoid overwriting $verified_at column name
 
 			// Calcule la date de vérification théorique à partir du date_retard
 			if (function_exists('ssr_verification_date_for_retard')) {
